@@ -7,7 +7,7 @@ import numpy as np
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentFactory, CrossSectionSpec
-from csufactory.csupdk.layer_map import CSULAYER as LAYER  #没用到，layer由crosssection决定的
+from csufactory.generic_tech.layer_map import CSULAYER as LAYER  #没用到，layer由crosssection决定的
 
 
 #输入/输出端口和阵列波导之间的过渡区域，用于分束和合束

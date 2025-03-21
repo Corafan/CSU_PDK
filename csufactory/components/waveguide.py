@@ -1,6 +1,6 @@
 import gdstk
 from csufactory.component import Component
-from csufactory.csupdk.layer_map import CSULAYER
+from csufactory.generic_tech.layer_map import CSULAYER
 from csufactory.show_gds import show
 from csufactory.show_gds import export_gds
 

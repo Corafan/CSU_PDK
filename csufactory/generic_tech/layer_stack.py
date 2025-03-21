@@ -1,4 +1,4 @@
-from csufactory.csupdk.layer_map import CSULAYER as LAYER
+from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 from gdsfactory.technology import LayerLevel, LayerStack, LogicalLayer
 from csufactory.technology.processes import (
     Anneal,

@@ -1,9 +1,9 @@
 import gdsfactory as gf
 import datetime
 from functools import partial
-from csufactory.csupdk.layer_map import CSULAYER as LAYER
+from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 from gdsfactory.technology import LayerLevel, LayerStack, LogicalLayer
-from csufactory.csupdk.layer_stack import LayerStackParameters as Para
+from csufactory.generic_tech.layer_stack import LayerStackParameters as Para
 from csufactory.components.awg import free_propagation_region
 from csufactory.components.awg import awg
 #from gdsfactory.components.awg import wg

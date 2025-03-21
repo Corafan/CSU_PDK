@@ -1,6 +1,6 @@
 from pydantic.dataclasses import dataclass
 
-from csufactory.csupdk.layer_map import Layer
+from csufactory.generic_tech.layer_map import Layer
 
 
 @dataclass(kw_only=True)

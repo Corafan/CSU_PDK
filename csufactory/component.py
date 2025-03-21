@@ -1,7 +1,7 @@
 import gdstk
 import subprocess
 import os
-from csufactory.csupdk.layer_map import CSULAYER
+from csufactory.generic_tech.layer_map import CSULAYER
 
 class Component:
     def __init__(self, name="default"):
