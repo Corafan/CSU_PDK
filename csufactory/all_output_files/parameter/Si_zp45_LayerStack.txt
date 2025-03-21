@@ -1,0 +1,9 @@
+LayerName: substrate, Thickness: 625.0, Material: silicon, RefractiveIndex: none, Zmin: -640.0, DerivedLayer: None
+LayerName: box, Thickness: 15.0, Material: silicon, RefractiveIndex: 1.444, Zmin: -15.0, DerivedLayer: (87, 0)
+LayerName: core, Thickness: 7.5, Material: silicon, RefractiveIndex: 1.4504, Zmin: 0.0, DerivedLayer: (200, 0)
+LayerName: top_clad, Thickness: 26.5, Material: sio2, RefractiveIndex: 1.444, Zmin: 0.0, DerivedLayer: (4, 0)
+LayerName: TiN, Thickness: 0.2, Material: TiN, RefractiveIndex: none, Zmin: 26.5, DerivedLayer: (10, 0)
+LayerName: heater_clad, Thickness: 2.0, Material: sio2, RefractiveIndex: none, Zmin: 26.5, DerivedLayer: (11, 0)
+LayerName: Ti, Thickness: 1.4, Material: Titanium, RefractiveIndex: none, Zmin: 26.7, DerivedLayer: (12, 0)
+LayerName: Al, Thickness: 0.7, Material: Aluminum, RefractiveIndex: none, Zmin: 28.099999999999998, DerivedLayer: (13, 0)
+LayerName: SiN, Thickness: 0.3, Material: SiN, RefractiveIndex: none, Zmin: 30.099999999999998, DerivedLayer: (20, 0)
