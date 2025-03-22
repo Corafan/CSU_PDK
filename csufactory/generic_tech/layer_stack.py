@@ -588,7 +588,7 @@ if __name__ == "__main__":
 
     for layername, layer in WAFER_STACK.layers.items():
         print(layername, layer.thickness,layer.material,layer.info.get("refractive_index", "none"))
-    
+
     process_steps = get_process()  # 获取制造步骤
 
     for step in process_steps:

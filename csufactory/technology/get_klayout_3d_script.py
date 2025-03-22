@@ -10,10 +10,7 @@ from gdsfactory.technology import DerivedLayer,LogicalLayer
 if TYPE_CHECKING:
     from gdsfactory.technology import LayerViews
 
-#这部分用来测试该函数
-import gdsfactory as gf
-from csufactory.generic_tech.layer_stack import get_layer_stack
-from csufactory.components.YBranch import Ybranch_1x2
+
 
 # 生成 KLayout 中 2.5D 视图 的脚本，该脚本可用于 KLayout 的 tech.lyt 文件，方便用户在 KLayout 中查看芯片结构的 3D 渲染效果。
 def get_klayout_3d_script(
@@ -179,8 +176,18 @@ def get_klayout_3d_script(
 
 #test_example:
 if __name__ == "__main__":
-    c=gf.Component()
-    z= c << Ybranch_1x2()
-    s =c.to_3d(layer_stack=get_layer_stack(thickness_wg=220e-3)) #取220nm
-    s.show()      #生成3d视图
-    c.show()      #生成gds视图
+    #这部分用来测试该函数
+    from csufactory.components.generate_Para.component_layer_stack import Si_zp45_LayerStack
+    # import gdsfactory as gf
+    from csufactory.generic_tech.layer_stack import get_layer_stack
+    # from csufactory.components.YBranch import Ybranch_1x2
+
+    print("打印layer_stack.py中的")
+    ls = get_layer_stack()
+    script = ls.get_klayout_3d_script()
+    print(script)
+
+    print("打印Si_zp45_LayerStack中的")
+
+    script = get_klayout_3d_script(Si_zp45_LayerStack)
+    print(script)

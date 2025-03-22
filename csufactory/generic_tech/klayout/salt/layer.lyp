@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-properties>
  <properties>
-  <frame-color>#e1ffff</frame-color>
-  <fill-color>#e1ffff</fill-color>
+  <frame-color>#00ffff</frame-color>
+  <fill-color>#00ffff</fill-color>
   <frame-brightness>0</frame-brightness>
   <fill-brightness>0</fill-brightness>
-  <dither-pattern>I0</dither-pattern>
+  <dither-pattern>I3</dither-pattern>
   <line-style/>
   <valid>true</valid>
   <visible>true</visible>
@@ -18,11 +18,11 @@
   <source>88/0@1</source>
  </properties>
  <properties>
-  <frame-color>#00ffff</frame-color>
-  <fill-color>#00ffff</fill-color>
+  <frame-color>#00ff7f</frame-color>
+  <fill-color>#00ff7f</fill-color>
   <frame-brightness>0</frame-brightness>
   <fill-brightness>0</fill-brightness>
-  <dither-pattern>I3</dither-pattern>
+  <dither-pattern>I10</dither-pattern>
   <line-style/>
   <valid>true</valid>
   <visible>true</visible>
@@ -73,7 +73,7 @@
   <fill-color>#ff1493</fill-color>
   <frame-brightness>0</frame-brightness>
   <fill-brightness>0</fill-brightness>
-  <dither-pattern>I35</dither-pattern>
+  <dither-pattern>I1</dither-pattern>
   <line-style/>
   <valid>true</valid>
   <visible>true</visible>
@@ -107,7 +107,7 @@
   <fill-color>#1e90ff</fill-color>
   <frame-brightness>0</frame-brightness>
   <fill-brightness>0</fill-brightness>
-  <dither-pattern>I35</dither-pattern>
+  <dither-pattern>I1</dither-pattern>
   <line-style/>
   <valid>true</valid>
   <visible>true</visible>
@@ -141,7 +141,7 @@
   <fill-color>#ffd700</fill-color>
   <frame-brightness>0</frame-brightness>
   <fill-brightness>0</fill-brightness>
-  <dither-pattern>I35</dither-pattern>
+  <dither-pattern>I1</dither-pattern>
   <line-style/>
   <valid>true</valid>
   <visible>true</visible>
@@ -154,8 +154,8 @@
   <source>3/2@1</source>
  </properties>
  <properties>
-  <frame-color>#7fff00</frame-color>
-  <fill-color>#7fff00</fill-color>
+  <frame-color>#f08080</frame-color>
+  <fill-color>#f08080</fill-color>
   <frame-brightness>0</frame-brightness>
   <fill-brightness>0</fill-brightness>
   <dither-pattern>I3</dither-pattern>
@@ -256,23 +256,6 @@
   <source>7/2@1</source>
  </properties>
  <properties>
-  <frame-color>#9932CC</frame-color>
-  <fill-color>#9932CC</fill-color>
-  <frame-brightness>0</frame-brightness>
-  <fill-brightness>0</fill-brightness>
-  <dither-pattern>I0</dither-pattern>
-  <line-style/>
-  <valid>true</valid>
-  <visible>true</visible>
-  <transparent>false</transparent>
-  <width>1</width>
-  <marked>false</marked>
-  <xfill>false</xfill>
-  <animation>0</animation>
-  <name>Metal_Ti 12/0</name>
-  <source>12/0@1</source>
- </properties>
- <properties>
   <frame-color>#b0c4de</frame-color>
   <fill-color>#b0c4de</fill-color>
   <frame-brightness>0</frame-brightness>
@@ -286,7 +269,24 @@
   <marked>false</marked>
   <xfill>false</xfill>
   <animation>0</animation>
-  <name>Metal_Al 13/0</name>
+  <name>Metal_Al 12/0</name>
+  <source>12/0@1</source>
+ </properties>
+ <properties>
+  <frame-color>#e1ffff</frame-color>
+  <fill-color>#e1ffff</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>I0</dither-pattern>
+  <line-style/>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width>1</width>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>Metal_Ti 13/0</name>
   <source>13/0@1</source>
  </properties>
  <properties>
@@ -311,7 +311,7 @@
   <fill-color>#ff00ff</fill-color>
   <frame-brightness>0</frame-brightness>
   <fill-brightness>0</fill-brightness>
-  <dither-pattern>I0</dither-pattern>
+  <dither-pattern>I20</dither-pattern>
   <line-style/>
   <valid>true</valid>
   <visible>true</visible>

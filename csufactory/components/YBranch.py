@@ -28,6 +28,17 @@ def Ybranch_1x2(
         angle2: Angle for the second output direction.
         cross_section: Cross-section type for the waveguide.
         allow_min_radius_violation: if True does not check for min bend radius.
+
+
+    .. code::
+                                                 length3
+                                               ______ o2
+                                              /
+                                 length1     /
+                         o1 -----------------  (width)
+                                      length2\
+                                              \_______ o3
+
     """
     c = gf.Component()
 
@@ -85,6 +96,7 @@ def Ybranch_1x2(
 
 
 if __name__ == "__main__":
+    from csufactory.generic_tech.layer_stack import get_layer_stack
     c=gf.Component()
 
     YBranch = c << Ybranch_1x2()
@@ -99,6 +111,9 @@ if __name__ == "__main__":
     # output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}_{timestamp}.gds"
     c.write_gds(output_gds_path)
     print(f"GDS 文件已保存至: {output_gds_path}")
+
+    s=c.to_3d(layer_stack=get_layer_stack(thickness_wg=220e-3))
+    s.show()
 
     # c_unlocked = c.copy()
     # c_unlocked.flatten()  # 展开所有子组件

@@ -5,6 +5,8 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, Delta
 from gdsfactory.components.bend_s import bend_s
 
+from csufactory.generic_tech.layer_stack import get_layer_stack
+
 
 @gf.cell
 def coupler_straight(
@@ -110,9 +112,9 @@ def coupler_symmetric(
 
 @gf.cell
 def coupler(
-        gap: float = 0.236,
-        length: float = 20.0,
-        dy: Delta = 4.0,
+        gap: float = 0.5,
+        length: float = 0.5,
+        dy: Delta = 8,
         dx: Delta = 10.0,
         cross_section: CrossSectionSpec = "strip",  # 这里表示横截面类型，实际上还包含layer:LayerSpec="WG",width,radius.radius_min
         allow_min_radius_violation: bool = False,
@@ -168,7 +170,21 @@ def coupler(
 
 
 if __name__ == "__main__":
-    c = coupler()
-    # c = coupler(gap=0.2, dy=100)
-    n = c.get_netlist()
+    from csufactory.generic_tech.layer_stack import get_layer_stack
+    c = gf.Component()
+
+    coupler_= c << coupler()
+    component_name = ("coupler")
+    # n = c.get_netlist()
     c.show()
+
+    # 无时间戳：
+    output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+    # 有时间戳：
+    # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}_{timestamp}.gds"
+    c.write_gds(output_gds_path)
+    print(f"GDS 文件已保存至: {output_gds_path}")
+
+    s=c.to_3d(layer_stack=get_layer_stack(thickness_wg=220e-3))
+    s.show()
