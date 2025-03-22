@@ -1,0 +1,106 @@
+from __future__ import annotations
+
+import gdsfactory as gf
+from gdsfactory.component import Component
+from gdsfactory.typings import CrossSectionSpec
+
+@gf.cell(check_instances=False)
+def Ybranch_1x2(
+    length1: float = 8,
+    length2: float = 7,
+    length3: float = 1,
+    bend_radius: float = 10,
+    width: float = 0.5,
+    angle1: float = 30,
+    angle2: float = 30,
+    cross_section: CrossSectionSpec = "strip",  # 这里是直接使用字符串来表示交叉截面
+    allow_min_radius_violation: bool = False,
+) -> Component:
+    r"""Y-branch waveguide.
+
+    Args:
+        length1: Length of the input waveguide.
+        length2: Length of the medium waveguide.
+        length3: Length of the output waveguide.
+        bend_radius: Radius of the first bend.
+        width: Width of the waveguide.
+        angle1: Angle for the first branch.
+        angle2: Angle for the second output direction.
+        cross_section: Cross-section type for the waveguide.
+        allow_min_radius_violation: if True does not check for min bend radius.
+    """
+    c = gf.Component()
+
+    # 创建输入波导
+    wg_input = c << gf.components.straight(length=length1, width=width,cross_section=cross_section)
+
+    # 创建第一对弯曲波导（用于分支）
+    bend_left1 = c << gf.components.bend_euler(angle=angle1, radius=bend_radius, width=width,cross_section=cross_section)
+    bend_right1 = c << gf.components.bend_euler(angle=-angle1, radius=bend_radius, width=width,cross_section=cross_section)
+
+    # 创建两个直波导（连接段）
+    wg_left1 = c << gf.components.straight(length=length2, width=width,cross_section=cross_section)
+    wg_right1 = c << gf.components.straight(length=length2, width=width,cross_section=cross_section)
+
+    # 创建第二对弯曲波导（用于调整输出方向）
+    bend_left2 = c << gf.components.bend_euler(angle=-angle2, radius=bend_radius, width=width,cross_section=cross_section)
+    bend_right2 = c << gf.components.bend_euler(angle=angle2, radius=bend_radius, width=width,cross_section=cross_section)
+
+    # 创建两个直波导（连接段）
+    wg_left2 = c << gf.components.straight(length=length3, width=width,cross_section=cross_section)
+    wg_right2 = c << gf.components.straight(length=length3, width=width,cross_section=cross_section)
+
+    # 连接输入波导到第一对弯曲波导
+    bend_left1.connect("o1", wg_input.ports["o2"])
+    bend_right1.connect("o1", wg_input.ports["o2"])
+
+    # 连接第一对弯曲波导到直波导
+    wg_left1.connect("o1", bend_left1.ports["o2"])
+    wg_right1.connect("o1", bend_right1.ports["o2"])
+
+    # 连接直波导到第二对弯曲波导
+    bend_left2.connect("o1", wg_left1.ports["o2"])
+    bend_right2.connect("o1", wg_right1.ports["o2"])
+
+    # 连接第一对弯曲波导到直波导
+    wg_left2.connect("o1", bend_left2.ports["o2"])
+    wg_right2.connect("o1", bend_right2.ports["o2"])
+
+
+    #加端口：
+    #输入端口
+    c.add_port("o1", port=wg_input.ports["o1"])
+    #输出端口
+    c.add_port("o2", port=wg_left2.ports["o2"])
+    c.add_port("o3", port=wg_right2.ports["o2"])
+    # c.draw_ports()                     #绘制之后无法隐藏！！
+    c.auto_rename_ports()
+
+    x = gf.get_cross_section(cross_section)
+    x.add_bbox(c)
+    c.flatten()
+    if not allow_min_radius_violation:
+        x.validate_radius(x.radius)
+    return c
+
+
+if __name__ == "__main__":
+    c=gf.Component()
+
+    YBranch = c << Ybranch_1x2()
+    component_name = ("YBranch_1x2")
+    c.show()
+
+
+    # 无时间戳：
+    output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+    # 有时间戳：
+    # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}_{timestamp}.gds"
+    c.write_gds(output_gds_path)
+    print(f"GDS 文件已保存至: {output_gds_path}")
+
+    # c_unlocked = c.copy()
+    # c_unlocked.flatten()  # 展开所有子组件
+    # c_unlocked.show()  # 显示组件
+

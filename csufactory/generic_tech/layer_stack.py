@@ -1,3 +1,4 @@
+#不能直接运行，但是其中的函数可以正常调用。而换文件夹可以正常运行，但无法被调用（暂时未找到原因，）
 from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 from gdsfactory.technology import LayerLevel, LayerStack, LogicalLayer
 from csufactory.technology.processes import (
@@ -93,8 +94,7 @@ def get_layer_stack(
         thickness_bottom_clad: bottom cladding thickness in um.
         thickness_wg: waveguide thickness in um.
         thickness_wng: waveguide thickness in um.
-        
-    
+
         thickness_slab_deep_etch: slab thickness after deep etch in um. equal to thickness of trench.
         thickness_slab_shallow_etch: slab thickness after shallow etch in um.
         thickness_top_clad: top cladding thickness in um.

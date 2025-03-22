@@ -94,7 +94,7 @@ def free_propagation_region(
     c.info["length"] = length
     c.info["width1"] = width1
     c.info["width2"] = width2
-    c.draw_ports()
+    # c.draw_ports()
     return c
 
 
@@ -204,7 +204,7 @@ def awg(
 if __name__ == "__main__":
     # c = free_propagation_region(inputs=4, outputs=4)
     c=gf.Component()
-    awg = c << awg(
+    AWG = c << awg(
     inputs= 1,
     arms= 9,                                   #阵列波导数量
     outputs= 1,
@@ -221,9 +221,14 @@ if __name__ == "__main__":
     
     # print(wg1.ports)
     # print(wg2.ports)
-    print(awg.ports) 
-    # print(wg1)
-    # print(wg2)
-    print(awg)
+    print(AWG.ports)
 
+    component_name = "awg"
+    # 无时间戳：
+    output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+    # 有时间戳：
+    # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # output_gds_path = fr"D:\ProgramData\anaconda3\Lib\site-packages\gdsfactory\all_output_files\gds\{component_name}_{timestamp}.gds"
+    c.write_gds(output_gds_path)
+    print(f"GDS 文件已保存至: {output_gds_path}")
     c.show()

@@ -3,10 +3,10 @@ import datetime
 from functools import partial
 from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 from gdsfactory.technology import LayerLevel, LayerStack, LogicalLayer
+from csufactory.technology.layer_stack import get_klayout_3d_script
 from csufactory.generic_tech.layer_stack import LayerStackParameters as Para
 from csufactory.components.awg import free_propagation_region
 from csufactory.components.awg import awg
-#from gdsfactory.components.awg import wg
 nm = 1e-3
 
 
@@ -25,7 +25,7 @@ csu_awg= c << awg(
     fpr_spacing= 50.0,                            #输入/输出FPR的间距
     arm_spacing= 1.0,                             #阵列波导间距
 )  
-#这部分LayerSpec是WG，所以层数为（200，0）=layer_corelayer_core
+#这部分LayerSpec是WG，所以层数为（200，0）=layer_core
 csu_awg.movex(25)
 csu_awg.movey(35)
 
@@ -195,7 +195,7 @@ Si_zp45_GDS= LayerStack(
 
 #打印层栈信息并保存：
 #定义保存路径和文件名
-output_file = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter\Si_zp45_LayerStack.txt"
+output_file = fr"C:\Windows\System32\CSU_PDK/csufactory\all_output_files\parameter\Si_zp45_LayerStack.txt"
 #打开文件进行写入
 with open(output_file, "w") as file:
     # 遍历层信息并将输出写入文件
@@ -212,6 +212,7 @@ print(f"TXT文件已保存至: {output_file}")
 
 
 #输出仅有awg的gds文件，并命名、保存：
+#将Si_zp45_GDS修改为Si_zp45_LayerStack，可以输出多层的
 z = gf.technology.layer_stack.get_component_with_derived_layers(c, Si_zp45_GDS)
 component_name = "awg_1_1" 
 #无时间戳：
@@ -223,8 +224,14 @@ z.write_gds(output_gds_path)
 print(f"GDS 文件已保存至: {output_gds_path}")
 z.show()
 
+#生成有每个层的3d预览图：
+#这里的c包含上述的所有component
+s =c.to_3d(layer_stack=Si_zp45_LayerStack)
+s.show()
+
 
 #生成仅有awg的3d预览图：
+#用新的变量可以改变器件的参数s
 # c = awg(
 #     inputs= 1,
 #     arms= 9,                                      #阵列波导数量
@@ -234,16 +241,10 @@ z.show()
 #     fpr_spacing= 50.0,                            #输入/输出FPR的间距
 #     arm_spacing= 1.0,                             #阵列波导间距
 # )
-# s =c.to_3d(layer_stack=Si_zp45_LayerStack)
-# s.show()
-
-
-##生成有每个层的3d预览图：
-c == csu_awg
-s =c.to_3d(layer_stack=Si_zp45_LayerStack)
+s =c.to_3d(layer_stack=Si_zp45_GDS)
 s.show()
 
 
 #生成层栈的所有信息：
-# x = Si_zp45_LayerStack.get_klayout_3d_script()
-# print(x)
+x = get_klayout_3d_script(Si_zp45_LayerStack)
+print(x)
