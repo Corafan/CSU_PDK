@@ -5,7 +5,7 @@ class CSULAYER():
     """ CSUPDK 层映射定义 """
 
     # 关于工艺流程的层，如下：
-    Si_Sub: Layer = (88, 0)
+    Si_Sub: Layer = (88, 0)               #基板都是这一层,无论是Quartz还是Silicon
     SiO_Bottom_Clad: Layer = (87, 0)
 
     WG: Layer = (200, 0)  # 波导waveguide，材料是Si

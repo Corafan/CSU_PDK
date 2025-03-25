@@ -1,9 +1,89 @@
-LayerName: substrate, Thickness: 625.0, Material: silicon, RefractiveIndex: none, Zmin: -640.0, DerivedLayer: None
-LayerName: box, Thickness: 15.0, Material: silicon, RefractiveIndex: 1.444, Zmin: -15.0, DerivedLayer: (87, 0)
-LayerName: core, Thickness: 7.5, Material: silicon, RefractiveIndex: 1.4504, Zmin: 0.0, DerivedLayer: (200, 0)
-LayerName: top_clad, Thickness: 26.5, Material: sio2, RefractiveIndex: 1.444, Zmin: 0.0, DerivedLayer: (4, 0)
-LayerName: TiN, Thickness: 0.2, Material: TiN, RefractiveIndex: none, Zmin: 26.5, DerivedLayer: (10, 0)
-LayerName: heater_clad, Thickness: 2.0, Material: sio2, RefractiveIndex: none, Zmin: 26.5, DerivedLayer: (11, 0)
-LayerName: Ti, Thickness: 1.4, Material: Titanium, RefractiveIndex: none, Zmin: 26.7, DerivedLayer: (12, 0)
-LayerName: Al, Thickness: 0.7, Material: Aluminum, RefractiveIndex: none, Zmin: 28.099999999999998, DerivedLayer: (13, 0)
-LayerName: SiN, Thickness: 0.3, Material: SiN, RefractiveIndex: none, Zmin: 30.099999999999998, DerivedLayer: (20, 0)
+Design Rules for 0.45% Delta N index (um)
+		Parameter
+wafer_diameter: 150000
+Birefringence: 0.0002
+PDL: 0.2
+Min_line_width: 1.5
+Min_spacing: 1.5
+CD_bias: 0.4
+CD_bias_tolerance: 0.1
+Min_bend_radius: 15
+
+layer_stack_parameter
+LayerName: substrate:
+ 	Thickness: 625.0,
+	Thickness_tolerance: None, 
+	Material: silicon, 
+	Zmin: -640.0, 
+	DerivedLayer: None
+
+LayerName: box:
+ 	Thickness: 15.0,
+	Thickness_tolerance: None, 
+	Material: silicon, 
+	Zmin: -15.0, 
+	DerivedLayer: None
+	Info:
+		refractive_index: 1.444
+
+LayerName: core:
+ 	Thickness: 6.5,
+	Thickness_tolerance: 0.5, 
+	Material: silicon, 
+	Zmin: 0.0, 
+	DerivedLayer: (200, 0)
+	Info:
+		core_etch: 7.5
+		core_etch_tolerance: -0.5
+		refractive_index: 1.4504
+		uniformity_of_index: 0.0002
+		uniformity_of_thickness: 0.3
+		color: blue
+		simulation_settings: {'wavelength': 1.55, 'solver': 'FDTD'}
+
+LayerName: top_clad:
+ 	Thickness: 26.5,
+	Thickness_tolerance: 2.0, 
+	Material: sio2, 
+	Zmin: 0.0, 
+	DerivedLayer: None
+	Info:
+		refractive_index: 1.444
+		color: blue
+		uniformity_of_index: 0.0002
+		uniformity_of_thickness: 1.5
+
+LayerName: TiN:
+ 	Thickness: 0.2,
+	Thickness_tolerance: None, 
+	Material: TiN, 
+	Zmin: 26.5, 
+	DerivedLayer: (10, 0)
+
+LayerName: heater_clad:
+ 	Thickness: 2.2,
+	Thickness_tolerance: None, 
+	Material: sio2, 
+	Zmin: 26.5, 
+	DerivedLayer: (11, 0)
+
+LayerName: Ti:
+ 	Thickness: 3.4,
+	Thickness_tolerance: None, 
+	Material: Titanium, 
+	Zmin: 26.7, 
+	DerivedLayer: None
+
+LayerName: Al:
+ 	Thickness: 2.7,
+	Thickness_tolerance: None, 
+	Material: Aluminum, 
+	Zmin: 28.099999999999998, 
+	DerivedLayer: (13, 0)
+
+LayerName: SiN:
+ 	Thickness: 1.0,
+	Thickness_tolerance: None, 
+	Material: SiN, 
+	Zmin: 30.099999999999998, 
+	DerivedLayer: (20, 0)

@@ -17,9 +17,13 @@ class LayerStackParameters:
     """用于层栈和工艺"""
 
     #0.45%,Si衬底。后续核对(问号表示待定)：
-    thickness_substrate: float = 625                   #基板厚度um
+    wafer_diameter: float = 150000                     #晶圆直径um
+    thickness_substrate_Si: float = 625                #Si基板厚度um
+    thickness_substrate_Quartz: float = 1000           #Quartz基板厚度um
     thickness_bottom_clad: float = 15                  #下包层——镀层厚度um
-    thickness_wg: float = 6.5                          #波导层厚度(core)
+    thickness_wg_zp45: float = 6.5                     #0.45波导层厚度(core)
+    thickness_wg_zp75: float = 6                       #0.75波导层厚度(core)
+    thickness_wg_150: float = 4.5                      #1.5波导层厚度(core)
     sidewall_angle_wg: float = 0                       #侧壁倾斜角度
     thickness_wgn: float = 6.5                         #非线性波导层厚度(core)？这个目前不需要
     sidewall_angle_wgn: float = 0                      #侧壁倾斜角度
@@ -27,9 +31,9 @@ class LayerStackParameters:
     thickness_slab_shallow_etch: float = 150 * nm      #浅刻蚀，刻蚀深度70nm？
     thickness_top_clad: float = 20                     #上包层——镀层厚度um
 
-    thickness_full_etch = thickness_wg + 1                                #全刻蚀深度
-    thickness_deep_etch = thickness_wg - thickness_slab_deep_etch         #深刻蚀深度？
-    thickness_shallow_etch = thickness_wg - thickness_slab_shallow_etch   #浅刻蚀深度？
+    thickness_full_etch = thickness_wg_zp45 + 1                                #全刻蚀深度
+    thickness_deep_etch = thickness_wg_zp45 - thickness_slab_deep_etch         #深刻蚀深度？
+    thickness_shallow_etch = thickness_wg_zp45 - thickness_slab_shallow_etch   #浅刻蚀深度？
 
     thickness_metal_TiN: float = round(200 * nm, 10)   #TiN加热层厚度
     #zmin_heater: float = 1.1                          #位置?
@@ -43,9 +47,11 @@ class LayerStackParameters:
 
 #层栈：存储多个 LayerLevel，形成整个芯片的 3D 层叠结构，包含每层属性
 def get_layer_stack(
-    thickness_substrate: float = LayerStackParameters.thickness_substrate,
+    wafer_diameter: float = LayerStackParameters.wafer_diameter,
+    thickness_substrate_Si: float = LayerStackParameters.thickness_substrate_Si,
+    thickness_substrate_Quartz: float = LayerStackParameters.thickness_substrate_Quartz,
     thickness_bottom_clad: float = LayerStackParameters.thickness_bottom_clad,    
-    thickness_wg: float = LayerStackParameters.thickness_wg,
+    thickness_wg: float = LayerStackParameters.thickness_wg_zp45,
     sidewall_angle_wg: float = LayerStackParameters.sidewall_angle_wg,
     thickness_wgn: float = LayerStackParameters.thickness_wgn,
     sidewall_angle_wgn: float = LayerStackParameters.sidewall_angle_wgn,
@@ -87,8 +93,6 @@ def get_layer_stack(
 ) -> LayerStack:
     """Returns generic LayerStack.
 
-    based on paper https://www.degruyter.com/document/doi/10.1515/nanoph-2013-0034/html
-
     Args:
         thickness_substrate: substrate thickness in um.
         thickness_bottom_clad: bottom cladding thickness in um.
@@ -127,10 +131,20 @@ def get_layer_stack(
     layers = dict(
         substrate=LayerLevel(
             layer=layer_Si_Sub,
-            thickness=thickness_substrate,
-            zmin=-thickness_substrate-thickness_bottom_clad,      
+            thickness=thickness_substrate_Si,
+            zmin=-thickness_substrate_Si-thickness_bottom_clad,
             material="silicon",
-            mesh_order=101,                   #网格划分，数字小的优先，用于数值仿真
+            mesh_order=101,                       #网格划分，数字小的优先，用于数值仿真
+            info={
+                "wafer_diameter": wafer_diameter,
+                "Birefringence":2.00E-04,
+                "PDL": 0.2,  # 偏振损耗
+                "Min_line_width": 1.5,
+                "Min_spacing": 1.5,
+                "CD_bias": 0.4,
+                "CD_bias_tolerance": 0.1,
+                "Min_bend_radius": 15,
+            }
         ),
         box=LayerLevel(
             layer=layer_box,
@@ -140,19 +154,13 @@ def get_layer_stack(
             mesh_order=9,
             info={
                 "refractive_index": 1.444,
-                "uniformity_of_index": 0.0002,
-                "uniformity_of_thickness": 1.5,
-                "color": "blue",
-                "simulation_settings": {
-                    "wavelength": 1.55,  # 单位 um
-                    "solver": "FDTD"
-                }
             }
         ),        
         core=LayerLevel(
             layer=layer_core - layer_full_etch - layer_deep_etch - layer_shallow_etch,
             #这层是由多个 GDS 层组合而成的物理派生层，通过计算得出最终层。第一层是核心层。
             thickness=thickness_wg,
+            thickness_tolerance= 0.5,  #即core thickness=5.5-6.5
             zmin=0,
             material="silicon",
             mesh_order=2,
@@ -200,6 +208,7 @@ def get_layer_stack(
         full_etch=LayerLevel(
             layer=layer_full_etch,
             thickness=thickness_full_etch,
+            thickness_tolerance= -0.5,
             zmin=0,
             material="silicon",
             mesh_order=1,
@@ -251,14 +260,13 @@ def get_layer_stack(
             zmin=0,                                        #？这部分还有待考量，分不同情况，看怎么安排
             material="sio2",
             thickness=thickness_top_clad,                  #+ thickness_wg？#同上
+            thickness_tolerance=2,
             mesh_order=10,
             info={
                 "refractive_index": 1.444,
                 "color": "blue",
-                "simulation_settings": {
-                    "wavelength": 1.55,                    # 单位 um
-                    "solver": "FDTD"
-                }
+                "uniformity_of_index": 0.0002,
+                "uniformity_of_thickness": 1.5,
             }
         ),
         TiN=LayerLevel(                        
@@ -324,9 +332,7 @@ WAFER_STACK = LayerStack(
 #这部分前半段按照工艺流程的顺序来，后面是工艺类型的补充：
 def get_process() -> tuple[ProcessStep, ...]:
     """Returns generic process to generate LayerStack.
-
     Represents processing steps that will result in the GenericLayerStack, starting from the waferstack LayerStack.
-
     """
     return (
         Grow(
@@ -579,9 +585,10 @@ def get_process() -> tuple[ProcessStep, ...]:
     )
 
 if __name__ == "__main__":
+    from csufactory.technology.get_klayout_3d_script import get_klayout_3d_script
+
     ls = get_layer_stack(thickness_substrate=50.0)
-    ls = get_layer_stack()
-    script = ls.get_klayout_3d_script()
+    script = get_klayout_3d_script(ls)
     print(script)
     print(ls.get_layer_to_material())
     print(ls.get_layer_to_thickness())

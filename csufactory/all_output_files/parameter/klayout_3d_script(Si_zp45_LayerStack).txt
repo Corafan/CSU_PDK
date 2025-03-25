@@ -1,54 +1,17 @@
-box = input(87, 0)
-core = input(200, 0)
-top_clad = input(4, 0)
-TiN = input(10, 0)
-heater_clad = input(11, 0)
-Ti = input(12, 0)
-Al = input(13, 0)
-SiN = input(20, 0)
+input: core = (200, 0)
+input: TiN = (10, 0)
+input: heater_clad = (11, 0)
+input: Al = (13, 0)
+input: SiN = (20, 0)
 
-substrate = input(88, 0)
-box = input(88, 0)
-core = input(200, 0)
-top_clad = input(88, 0)
-Ti = input(88, 0)
-
-unetched_(10, 0) = (10, 0) - TiN
-unetched_(11, 0) = (11, 0) - heater_clad
-unetched_(13, 0) = (13, 0) - Al
-unetched_(20, 0) = (20, 0) - SiN
-
-slab_87_box_0 = 87 & box
-slab_0_box_1 = 0 & box
-slab_200_core_0 = 200 & core
-slab_0_core_1 = 0 & core
-slab_4_top_clad_0 = 4 & top_clad
-slab_0_top_clad_1 = 0 & top_clad
-slab_10_TiN_0 = 10 & TiN
-slab_0_TiN_1 = 0 & TiN
-slab_11_heater_clad_0 = 11 & heater_clad
-slab_0_heater_clad_1 = 0 & heater_clad
-slab_12_Ti_0 = 12 & Ti
-slab_0_Ti_1 = 0 & Ti
-slab_13_Al_0 = 13 & Al
-slab_0_Al_1 = 0 & Al
-slab_20_SiN_0 = 20 & SiN
-slab_0_SiN_1 = 0 & SiN
+ input: substrate =(88, 0)
+ input: box =(87, 0)
+ input: core =(200, 0)
+ input: top_clad =(4, 0)
+ input: Ti =(12, 0)
 
 z(substrate, zstart: -640.0, zstop: -15.0, name: 'substrate: silicon 88/0', )
-z(slab_87_box_0, zstart: -15.0, zstop: -15.0, name: 'slab_87_box_0: silicon', )
-z(slab_0_box_1, zstart: -15.0, zstop: -15.0, name: 'slab_0_box_1: silicon', )
-z(slab_200_core_0, zstart: 0.0, zstop: 0.0, name: 'slab_200_core_0: silicon', )
-z(slab_0_core_1, zstart: 0.0, zstop: 0.0, name: 'slab_0_core_1: silicon', )
-z(slab_4_top_clad_0, zstart: 0.0, zstop: 0.0, name: 'slab_4_top_clad_0: sio2', )
-z(slab_0_top_clad_1, zstart: 0.0, zstop: 0.0, name: 'slab_0_top_clad_1: sio2', )
-z(slab_10_TiN_0, zstart: 26.5, zstop: 26.5, name: 'slab_10_TiN_0: TiN', )
-z(slab_0_TiN_1, zstart: 26.5, zstop: 26.5, name: 'slab_0_TiN_1: TiN', )
-z(slab_11_heater_clad_0, zstart: 26.5, zstop: 26.5, name: 'slab_11_heater_clad_0: sio2', )
-z(slab_0_heater_clad_1, zstart: 26.5, zstop: 26.5, name: 'slab_0_heater_clad_1: sio2', )
-z(slab_12_Ti_0, zstart: 26.7, zstop: 26.700000000000003, name: 'slab_12_Ti_0: Titanium', )
-z(slab_0_Ti_1, zstart: 26.7, zstop: 26.700000000000003, name: 'slab_0_Ti_1: Titanium', )
-z(slab_13_Al_0, zstart: 28.1, zstop: 28.1, name: 'slab_13_Al_0: Aluminum', )
-z(slab_0_Al_1, zstart: 28.1, zstop: 28.1, name: 'slab_0_Al_1: Aluminum', )
-z(slab_20_SiN_0, zstart: 30.1, zstop: 30.099999999999998, name: 'slab_20_SiN_0: SiN', )
-z(slab_0_SiN_1, zstart: 30.1, zstop: 30.099999999999998, name: 'slab_0_SiN_1: SiN', )
+z(box, zstart: -15.0, zstop: 0.0, name: 'box: silicon 87/0', )
+z(core, zstart: 0.0, zstop: 6.5, name: 'core: silicon 200/0', )
+z(top_clad, zstart: 0.0, zstop: 26.5, name: 'top_clad: sio2 4/0', )
+z(Ti, zstart: 26.7, zstop: 30.1, name: 'Ti: Titanium 12/0', )
