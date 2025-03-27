@@ -10,6 +10,7 @@ from csufactory.technology.get_klayout_3d_script import get_klayout_3d_script
 from csufactory.generic_tech.layer_stack import LayerStackParameters as Para
 from csufactory.components.awg import free_propagation_region
 from csufactory.components.awg import awg
+from csufactory.components.MMI import mmi
 nm = 1e-3
 
 
@@ -21,7 +22,8 @@ BOX = c << gf.components.rectangle(size=(100, 100), layer=(87, 0))
 SiO_ToP_Clad = c << gf.components.rectangle(size=(100, 100), layer=(4, 0))
 Metal_Ti = c << gf.components.rectangle(size=(100, 100), layer=(12, 0))
 
-#芯层
+#芯层:
+#芯层AWG
 csu_awg= c << awg(
     inputs= 1,
     arms= 9,                                       #阵列波导数量
@@ -30,10 +32,16 @@ csu_awg= c << awg(
     free_propagation_region_output_function= partial(free_propagation_region, width1=2, width2=20.0),
     fpr_spacing= 50.0,                            #输入/输出FPR的间距
     arm_spacing= 1.0,                             #阵列波导间距
-)  
+)
 #这部分LayerSpec是WG，所以层数为（200，0）=layer_core
 csu_awg.movex(25)
 csu_awg.movey(35)
+
+#芯层MMI
+# csu_mmi= c << mmi()
+# csu_mmi.movex(25)
+# csu_mmi.movey(50)
+
 
 #刻蚀层
 heater_etch_1 = c << gf.components.rectangle(size=(5, 100), layer=(5, 2))

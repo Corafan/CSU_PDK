@@ -118,9 +118,7 @@ def mmi(
 
 if __name__ == "__main__":
     from csufactory.generic_tech.layer_stack import get_layer_stack
-    c = gf.Component()
-
-    mmi_= c << mmi()
+    c = mmi()
     component_name = ("mmi")
     # n = c.get_netlist()
     c.show()

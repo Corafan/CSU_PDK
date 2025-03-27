@@ -76,7 +76,7 @@ def free_propagation_region(
                 orientation=180,
                 layer=layer,
             )
-    
+
     #输出端口命名：
     y = np.linspace(-width2 / 2 + wg_width / 2, width2 / 2 - wg_width / 2, outputs)
     y = gf.snap.snap_to_grid(y)
@@ -146,7 +146,7 @@ def awg(
         arm_spacing: y separation between arms.
         cross_section: cross_section function.
     """
-    c = Component()
+    c = gf.Component()
     fpr_in = free_propagation_region_input_function(
         inputs=inputs,
         outputs=arms,
@@ -196,15 +196,14 @@ def awg(
         for i, port in enumerate(gf.port.get_ports_list(fpr_out_ref, prefix="W")):
             c.add_port(f"O{i}", port=port)
 
-    c.draw_ports()
+    # c.draw_ports()
     return c
 
 
 #运行函数生成awg器件：
 if __name__ == "__main__":
     # c = free_propagation_region(inputs=4, outputs=4)
-    c=gf.Component()
-    AWG = c << awg(
+    c = awg(
     inputs= 1,
     arms= 9,                                   #阵列波导数量
     outputs= 1,
@@ -212,16 +211,16 @@ if __name__ == "__main__":
     free_propagation_region_output_function= partial(free_propagation_region, width1=2, width2=20.0),
     fpr_spacing= 50,                            #输入/输出FPR的间距
     arm_spacing= 1,                             #阵列波导间距
-) 
-    
+)
+
     # wg1 = c << wg(length=10)
     # wg2 = c << wg(length=10)
     # wg1.connect("g2",awg.ports["I1"])
     # wg2.connect("g2",awg.ports["O1"])
-    
+
     # print(wg1.ports)
     # print(wg2.ports)
-    print(AWG.ports)
+    print(c.ports)
 
     component_name = "awg"
     # 无时间戳：
@@ -232,3 +231,5 @@ if __name__ == "__main__":
     c.write_gds(output_gds_path)
     print(f"GDS 文件已保存至: {output_gds_path}")
     c.show()
+
+
