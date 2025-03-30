@@ -1,35 +1,36 @@
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import ComponentSpec,LayerSpec
 
 @gf.cell
 def grating(
-    size_center:tuple[float, float]=(20,4),
+    width:float =4,
+    length:float =20,
     num_wg: int = 5,  # 波导数量
-    layer: LayerSpec = "WG",
-    port_type: str | None = None,
+    cross_section: ComponentSpec = "strip",
 ) -> Component:
     """生成一个光栅（grating）。
 
     Args:
-        size_center:中心波导的尺寸。
         num_wg: 波导的数量。
         layer:层类型。
-        port_type:端口类型。
     """
-    waveguide_length= 2*size_center[1]                 # 波导的长度
-    waveguide_width= size_center[1]/3                  # 波导的宽度
-
     c = gf.Component()
-    wg_center = c << gf.components.rectangle(size=size_center, layer=layer)
+
+    waveguide_length= 2*width                 # 波导的长度
+    waveguide_width= width/3                  # 波导的宽度
+
+    x1= gf.get_cross_section(cross_section, width=width)
+    wg_center = c << gf.components.straight(length=length, cross_section=x1)
     wg_center.dcenter = (0, 0)
-    wg_ = gf.components.straight(length=waveguide_width,width=waveguide_length,layer=layer)
+    x2= gf.get_cross_section(cross_section, width=waveguide_length)
+    wg_ = gf.components.straight(length=waveguide_width,cross_section=x2)
 
     # if num_wg % 2 == 0:      #如果波导是偶数
     for i in range(num_wg):
         # 创建波导
-        delta_y= (size_center[0])/(num_wg+1)
-        x_start= - size_center[0]/2 + delta_y
+        delta_y= (length)/(num_wg+1)
+        x_start= - length/2 + delta_y
 
         # 计算波导起始位置（中心区域边缘）
         x = x_start + i * delta_y
@@ -40,18 +41,17 @@ def grating(
         # 移动波导到起点
         wg.dmove((x,0))
 
-    if port_type:
-        prefix = "o" if port_type == "optical" else "e"
+
     #输入端口
-        c.add_port(f"{prefix}1", port=wg_center.ports["e1"])
+    c.add_port(f"o1", port=wg_center.ports["o1"])
     #输出端口
-        c.add_port(f"{prefix}2",port=wg_center.ports["e3"])
+    c.add_port(f"o2",port=wg_center.ports["o2"])
 
     c.flatten()
     return c
 
 if __name__ == "__main__":
-    c = grating(port_type="optical")
+    c = grating()
     c.show()
 
     # c.pprint_ports()

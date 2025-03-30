@@ -173,6 +173,7 @@ def awg(
         separation=arm_spacing,
         cross_section=cross_section,
         radius=10, #弯曲半径默认是10
+        bend=gf.components.bend_circular  # Change here, if bend_euler is not available
     )
 
     #修改：

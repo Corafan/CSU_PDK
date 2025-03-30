@@ -1,8 +1,14 @@
+import gdsfactory as gf
 
 Layer = tuple[int, int]
 
-class CSULAYER():
+class CSULAYER(gf.LayerEnum):
     """ CSUPDK 层映射定义 """
+
+    layout = gf.constant(gf.kcl.layout)
+
+#gf.LayerEnum：继承 gdsfactory 的 LayerEnum，用于存储 PDK 层信息，类似于 dict 但更加结构化。
+#gf.kcl.layout 是 kfactory 的 layout 管理器。gf.constant() 确保 layout 不会被修改。
 
     # 关于工艺流程的层，如下：
     Si_Sub: Layer = (88, 0)               #基板都是这一层,无论是Quartz还是Silicon
@@ -57,9 +63,9 @@ class CSULAYER():
     # 延续前一部分的（用于generic_tech.__init__部分）：
     TE: Layer = (203, 0)
     TM: Layer = (204, 0)
-    PORT: Layer = (1, 10)  # 表示一般的光学输入/输出端口，通常用于光信号的连接。
+    PORT: Layer = (140, 10)  # 表示一般的光学输入/输出端口，通常用于光信号的连接。
     # 如，一个光波导的起点和终点，或者一个分光器的输入和输出端口。
-    PORTE: Layer = (1, 11)  # 表示电气端口，主要用于电信号的传输，通常与电气控制器件相连接。
+    PORTE: Layer = (140, 11)  # 表示电气端口，主要用于电信号的传输，通常与电气控制器件相连接。
     # 如用于控制光调制器、加热器或其他需要电信号驱动的光学元件。
     # 不确定部分，via通孔(层数未修改)：
     # VIAC: Layer = (40, 0)
@@ -72,10 +78,10 @@ class CSULAYER():
 
 
 
-    # classmethod 是一个类型注解丰富的类，模拟了 Python 内置的 classmethod 装饰器的行为。
-    # 它通过泛型和类型注解提供了更详细的类型信息，使得在使用时可以获得更好的类型检查和代码提示。
-    @classmethod
-    def get_layer(cls, name):
-        """ 获取层定义 """
-        return getattr(cls, name, None)
+    # # classmethod 是一个类型注解丰富的类，模拟了 Python 内置的 classmethod 装饰器的行为。
+    # # 它通过泛型和类型注解提供了更详细的类型信息，使得在使用时可以获得更好的类型检查和代码提示。
+    # @classmethod
+    # def get_layer(cls, name):
+    #     """ 获取层定义 """
+    #     return getattr(cls, name, None)
 

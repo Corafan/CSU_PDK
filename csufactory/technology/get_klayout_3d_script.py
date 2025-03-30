@@ -196,7 +196,6 @@ def get_klayout_3d_script(
 if __name__ == "__main__":
     #这部分用来测试该函数
     from csufactory.components.generate_Para.component_layer_stack import Si_zp45_LayerStack
-    from csufactory.generic_tech.layer_stack import get_layer_stack
     from gdsfactory.technology import LayerViews
 
     # print("打印layer_stack.py中默认的layer_stack，layer_views默认：")

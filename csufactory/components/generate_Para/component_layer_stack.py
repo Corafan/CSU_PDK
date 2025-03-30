@@ -2,8 +2,6 @@ import gdsfactory as gf
 import datetime
 from functools import partial
 
-from csupdk.gdsfactory.components.grating_coupler_elliptical_lumerical import parameters
-
 from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 from gdsfactory.technology import LayerLevel, LayerStack, LogicalLayer
 from csufactory.technology.get_klayout_3d_script import get_klayout_3d_script
@@ -730,7 +728,7 @@ CSU_LayerStacks = {
 if __name__ == "__main__":
     #打印一个层栈信息并保存：
     #定义保存路径和文件名
-    output_file = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter\Si_zp45_LayerStack.txt"
+    output_file = fr"C:\Windows\System32\CSU_PDK/csufactory/all_output_files/parameter/Si_zp45_LayerStack.txt"
     #打开文件进行写入
     with open(output_file, "w") as file:
         # 遍历层信息并将输出写入文件
@@ -753,7 +751,7 @@ if __name__ == "__main__":
             if layername != "substrate" and layer.info:
                 file.write("\tInfo:\n")
                 for key, value in layer.info.items():
-                    file.write(f"\t\t{key}: {value}\n")  # **每个 info 参数换行**
+                    file.write(f"\t\t{key}: {value}\n")  #每个 info 参数换行
             # #打印所有info
             # if hasattr(layer, "info") and isinstance(layer.info, dict):
             #     file.write("\tInfo:\n")  # 添加 Info 标题
@@ -784,11 +782,11 @@ if __name__ == "__main__":
                     f"\tZmin: {layer.zmin}, \n"
                     f"\tDerivedLayer: {layer.derived_layer}\n"
                 )
-                # **✅ 修改 info 的存储方式**
+                # 修改 info 的存储方式
                 if layername != "substrate" and layer.info:
                     file.write("\tInfo:\n")
                     for key, value in layer.info.items():
-                        file.write(f"\t\t{key}: {value}\n")  # **每个 info 参数换行**
+                        file.write(f"\t\t{key}: {value}\n")  # 每个 info 参数换行
 
     print(f"TXT文件已保存至: {output_file2}")
 
@@ -829,7 +827,7 @@ if __name__ == "__main__":
     s.show()
 
     # 定义保存路径和文件名
-    output_file = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter\klayout_3d_script(Si_zp45_LayerStack).txt"
+    output_file = fr"C:\Windows\System32\CSU_PDK/csufactory/all_output_files/parameter/klayout_3d_script(Si_zp45_LayerStack).txt"
     # 打开文件进行写入
     with open(output_file, "w") as file:
         file.write(get_klayout_3d_script(Si_zp45_LayerStack))

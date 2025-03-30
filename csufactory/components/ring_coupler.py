@@ -11,7 +11,7 @@ def ring_coupler(
     radius: float = 5.0,
     width: float = 1.5,
     layer: LayerSpec = "WG",
-    port_type: str | None = None,
+    cross_section: ComponentSpec = "strip",
 ) -> Component:
     r"""Coupler for ring.
 
@@ -20,7 +20,6 @@ def ring_coupler(
         radius: of the outside circle.
         width: width of the ring and straight waveguides.
         layer:layer spec.
-        port_type:port_type.
 
     .. code::
         o2    length_x   o3
@@ -36,12 +35,11 @@ def ring_coupler(
     c = gf.Component()
     width_wg = width
     length_wg = 3*radius
-    wg_bottom = c << gf.components.rectangle(size=(width_wg,length_wg),layer=layer)
-    wg_top = c << gf.components.rectangle(size=(width_wg,length_wg),layer=layer)
+    x1 = gf.get_cross_section(cross_section, width=width_wg)
+    wg_bottom = c << gf.components.straight(length=length_wg,cross_section=x1)
+    wg_top = c << gf.components.straight(length=length_wg,cross_section=x1)
     wg_bottom.dcenter = (0, 0)
     wg_top.dcenter = (0, 0)
-    wg_bottom.rotate(90)
-    wg_top.rotate(90)
     gap_=gap+radius+width/2
     wg_bottom.movey(-gap_)
     wg_top.movey(gap_)
@@ -51,19 +49,18 @@ def ring_coupler(
     ring= gf.boolean(circle_outer, circle_inner, operation="xor", layer=layer)
     c << ring
 
-    if port_type:
-        prefix = "o" if port_type == "optical" else "e"
+
     #输入端口
-        c.add_port(f"{prefix}1", port=wg_bottom.ports["e2"])
-        c.add_port(f"{prefix}2", port=wg_top.ports["e2"])
+    c.add_port(f"o1", port=wg_bottom.ports["o1"])
+    c.add_port(f"o2", port=wg_top.ports["o1"])
     #输出端口
-        c.add_port(f"{prefix}3",port=wg_top.ports["e4"])
-        c.add_port(f"{prefix}4",port=wg_bottom.ports["e4"])
+    c.add_port(f"o3",port=wg_top.ports["o2"])
+    c.add_port(f"o4",port=wg_bottom.ports["o2"])
     c.flatten()
     return c
 
 if __name__ == "__main__":
-    c = ring_coupler(port_type="optical")
+    c = ring_coupler()
     c.show()
     component_name = ("ring_coupler")
 

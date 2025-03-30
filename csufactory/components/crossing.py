@@ -3,6 +3,7 @@ from __future__ import annotations
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import LayerSpec
+from gdsfactory.typings import CrossSectionSpec
 
 
 @gf.cell
@@ -11,6 +12,7 @@ def crossing(
     width: float = 2.0,
     layer: LayerSpec = "WG",
     port_type: str | None = None,
+    cross_section: CrossSectionSpec = "strip",
 ) -> Component:
     """Returns a cross from two rectangles of length and width.
 
@@ -25,66 +27,58 @@ def crossing(
     c = gf.Component()
 
     width_center=width+2   # 确保中心波导略大，防止重叠
-    R = c<<gf.components.rectangle(size=(width_center, width_center), layer=layer)
+    x1 = gf.get_cross_section(cross_section, width=width_center)
+    R = c<<gf.components.straight(length=width_center,cross_section=x1)
     R.dcenter = (0, 0)
     # dcenter="""Returns the coordinate center of the bounding box.返回边界框的中心坐标"""
 
-    r = gf.components.rectangle(size=(width, length), layer=layer)
-    r1 = c.add_ref(r)                     #上
-    r2 = c.add_ref(r).drotate(90)         #左
-    r3 = c.add_ref(r).drotate(180)        #下
-    r4 = c.add_ref(r).drotate(270)        #右
+    x2 = gf.get_cross_section(cross_section, width=width)
+    r = gf.components.straight(length=length, cross_section=x2)
+    r1 = c.add_ref(r)                     #右
+    r2 = c.add_ref(r).drotate(90)         #上
+    r3 = c.add_ref(r).drotate(180)        #左
+    r4 = c.add_ref(r).drotate(270)        #下
 
-    # 移动四个波导，使它们各自对准中心正方形的四个方向
-    r1.dmovex(-width / 2)  # 上方波导
-    r2.dmovey(-width / 2)  # 左侧波导
-    r3.dmovex(width / 2)   # 下方波导
-    r4.dmovey(width / 2)   # 右侧波导
-    r1.dmovey( width_center / 2)  # 上方波导
-    r2.dmovex(- width_center / 2)  # 左侧波导
-    r3.dmovey(- width_center / 2)  # 下方波导
-    r4.dmovex(width_center / 2)  # 右侧波导
+    # # 移动四个波导，使它们各自对准中心正方形的四个方向
+    r1.dmovex( width_center / 2)   # 右方波导
+    r2.dmovey(width_center / 2)    # 上侧波导
+    r3.dmovex(- width_center / 2)  # 左方波导
+    r4.dmovey(-width_center / 2)   # 下侧波导
     # c.flatten()
 
-    if port_type:
-        prefix = "o" if port_type == "optical" else "e"
-        c.add_port(
-            f"{prefix}1",
-            width=width,
-            layer=layer,
-            orientation=180,
-            center=(-length - width_center / 2, 0),
-            port_type=port_type,
+    c.add_port(
+        f"o1",
+        width=width,
+        layer=layer,
+        orientation=180,
+        center=(-length - width_center / 2, 0),
         )
-        c.add_port(
-            f"{prefix}2",
-            width=width,
-            layer=layer,
-            orientation=90,
-            center=(0, +length + width_center / 2),
-            port_type=port_type,
+    c.add_port(
+        f"o2",
+        width=width,
+        layer=layer,
+        orientation=90,
+        center=(0, +length + width_center / 2),
         )
-        c.add_port(
-            f"{prefix}3",
-            width=width,
-            layer=layer,
-            orientation=0,
-            center=(+length + width_center / 2, 0),
-            port_type=port_type,
+    c.add_port(
+        f"o3",
+        width=width,
+        layer=layer,
+        orientation=0,
+        center=(+length + width_center / 2, 0),
         )
-        c.add_port(
-            f"{prefix}4",
-            width=width,
-            layer=layer,
-            orientation=270,
-            center=(0, -length - width_center / 2),
-            port_type=port_type,
+    c.add_port(
+        f"o4",
+        width=width,
+        layer=layer,
+        orientation=270,
+        center=(0, -length - width_center / 2),
         )
     return c
 
 
 if __name__ == "__main__":
-    c = crossing(port_type="optical")
+    c = crossing()
     c.show()
 
     # c.pprint_ports()

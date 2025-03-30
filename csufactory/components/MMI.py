@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from gdsfactory.typings import ComponentFactory, CrossSectionSpec
+from gdsfactory.typings import CrossSectionSpec
 import gdsfactory as gf
 from gdsfactory.component import Component
 
@@ -14,7 +14,6 @@ def mmi(
     length_wg: float = 5.0,
     length_mmi: float = 60,
     width_mmi: float = 40.0,
-    straight: ComponentFactory = "straight",
     cross_section: CrossSectionSpec = "strip",
 ) -> Component:
     r"""
@@ -26,7 +25,6 @@ def mmi(
         length_mmi: in x direction.
         width_mmi: in y direction.
         straight: straight function.
-
     .. code::
 
                    length_mmi
@@ -65,8 +63,7 @@ def mmi(
 
     x = gf.get_cross_section(cross_section)
 
-    _ = c << gf.get_component(
-        straight,
+    _ = c << gf.components.straight(
         length=length_mmi,
         width=w_mmi,
         cross_section=cross_section,

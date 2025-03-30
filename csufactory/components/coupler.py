@@ -5,9 +5,6 @@ from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, Delta
 from gdsfactory.components.bend_s import bend_s
 
-from csufactory.generic_tech.layer_stack import get_layer_stack
-
-
 @gf.cell
 def coupler_straight(
     length: float = 10.0,
@@ -48,7 +45,6 @@ def coupler_straight(
 
 @gf.cell
 def coupler_symmetric(
-    bend: ComponentSpec = bend_s,
     gap: float = 0.234,
     dy: Delta = 4.0,
     dx: Delta = 10.0,
@@ -77,6 +73,7 @@ def coupler_symmetric(
                            o4
 
     """
+    bend= bend_s,
     c = Component()
     x = gf.get_cross_section(cross_section)
     width = x.width

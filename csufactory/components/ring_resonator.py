@@ -11,7 +11,7 @@ def ring_resonator(
     radius: float = 5.0,
     width: float = 1.5,
     layer: LayerSpec = "WG",
-    port_type: str | None = None,
+    cross_section: ComponentSpec = "strip",
 ) -> Component:
     r"""Coupler for ring.
 
@@ -20,7 +20,6 @@ def ring_resonator(
         radius: of the outside circle.
         width: width of the ring and straight waveguides.
         layer:layer spec.
-        port_type:port_type.
 
     .. code::
              ------------
@@ -35,9 +34,9 @@ def ring_resonator(
     c = gf.Component()
     width_wg = width
     length_wg = 3 * radius
-    wg_bottom = c << gf.components.rectangle(size=(width_wg, length_wg), layer=layer)
+    x1 = gf.get_cross_section(cross_section, width=width_wg)
+    wg_bottom = c << gf.components.straight(length=length_wg, cross_section=x1)
     wg_bottom.dcenter = (0, 0)
-    wg_bottom.rotate(90)
     gap_=-gap-radius-width/2
     wg_bottom.movey(gap_)
 
@@ -46,17 +45,16 @@ def ring_resonator(
     ring= gf.boolean(circle_outer, circle_inner, operation="xor", layer=layer)
     c << ring
 
-    if port_type:
-        prefix = "o" if port_type == "optical" else "e"
+
     #输入端口
-        c.add_port(f"{prefix}1", port=wg_bottom.ports["e2"])
+    c.add_port(f"o1", port=wg_bottom.ports["o1"])
     #输出端口
-        c.add_port(f"{prefix}2",port=wg_bottom.ports["e4"])
+    c.add_port(f"o2",port=wg_bottom.ports["o2"])
     c.flatten()
     return c
 
 if __name__ == "__main__":
-    c = ring_resonator(port_type="optical")
+    c = ring_resonator()
     c.show()
     component_name = ("ring_resonator")
 

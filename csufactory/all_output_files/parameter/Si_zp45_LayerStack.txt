@@ -31,7 +31,7 @@ LayerName: core:
 	Thickness_tolerance: 0.5, 
 	Material: silicon, 
 	Zmin: 0.0, 
-	DerivedLayer: (200, 0)
+	DerivedLayer: WG
 	Info:
 		core_etch: 7.5
 		core_etch_tolerance: -0.5
@@ -58,14 +58,14 @@ LayerName: TiN:
 	Thickness_tolerance: None, 
 	Material: TiN, 
 	Zmin: 26.5, 
-	DerivedLayer: (10, 0)
+	DerivedLayer: Metal_TiN
 
 LayerName: heater_clad:
  	Thickness: 2.2,
 	Thickness_tolerance: None, 
 	Material: sio2, 
 	Zmin: 26.5, 
-	DerivedLayer: (11, 0)
+	DerivedLayer: SiO_Oxide_1
 
 LayerName: Ti:
  	Thickness: 3.4,
@@ -79,11 +79,11 @@ LayerName: Al:
 	Thickness_tolerance: None, 
 	Material: Aluminum, 
 	Zmin: 28.099999999999998, 
-	DerivedLayer: (13, 0)
+	DerivedLayer: Metal_Al
 
 LayerName: SiN:
  	Thickness: 1.0,
 	Thickness_tolerance: None, 
 	Material: SiN, 
 	Zmin: 30.099999999999998, 
-	DerivedLayer: (20, 0)
+	DerivedLayer: SiN

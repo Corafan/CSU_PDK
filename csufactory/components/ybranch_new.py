@@ -1,3 +1,4 @@
+#有个端口无法删去。。。。
 from __future__ import annotations
 
 import gdsfactory as gf
@@ -72,9 +73,6 @@ def ybranch(
         width=2*w,  # 宽度取其中之一
         layer=port1.layer  # 层信息
     )
-    c.add_port("o2", port=top_bend[bend_port2_name])
-    c.add_port("o3", port=bot_bend[bend_port2_name])
-
     c.info["length"] = bend_component.info["length"]
     c.info["min_bend_radius"] = bend_component.info["min_bend_radius"]
 
@@ -84,9 +82,13 @@ def ybranch(
 
     # 连接直波导 wg_input 到 o4 端口
     wg_input.connect("o1", c.ports["o4"])
+
     c.add_port("o1", port=wg_input.ports["o2"])
+    c.add_port("o2", port=top_bend[bend_port2_name])
+    c.add_port("o3", port=bot_bend[bend_port2_name])
 
     c.flatten()
+    # print(type(c))  # 打印 c 的类型
     return c
 
 
