@@ -68,6 +68,10 @@ def arc(cross_section: str = "strip_sc", **kwargs: Any) -> gf.Component:
 def awg(cross_section: str = "strip_sc", **kwargs: Any) -> gf.Component:
     return cf.components.awg(cross_section=cross_section, **kwargs)
 
+# @_cell
+# def fpr(cross_section: str = "strip_sc", **kwargs: Any) -> gf.Component:
+#     return cf.components.free_propagation_region(cross_section=cross_section, **kwargs)
+
 @_cell
 def coupler(cross_section: str = "strip_sc", **kwargs: Any) -> gf.Component:
     return cf.components.coupler(cross_section=cross_section, **kwargs)
@@ -136,15 +140,24 @@ PDK = gf.Pdk(
 PDK.activate()
 
 if __name__ == "__main__":
-    c =y_branch()
-    c =awg()
+    from csufactory.components.awg import free_propagation_region
+    c =awg(
+    inputs= 1,
+    arms= 9,                                   #阵列波导数量
+    outputs= 1,
+    free_propagation_region_input_function=partial(free_propagation_region, width1=2, width2=20.0),
+    free_propagation_region_output_function=partial(free_propagation_region, width1=2, width2=20.0),
+    fpr_spacing= 50,                            #输入/输出FPR的间距
+    arm_spacing= 1,                             #阵列波导间距
+    )
     c=coupler()
+    c =y_branch()
     c=mmi()
     c=star_coupler()
     c=arc()
     c=ring_coupler()
     c=ring_resonator()
     c=s_bend()
-    c=grating()
     c=crossing()
+    c=grating()
     c.show()

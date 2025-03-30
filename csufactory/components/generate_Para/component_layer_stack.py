@@ -720,9 +720,9 @@ z150_GDS= LayerStack(
 )
 
 CSU_LayerStacks = {
-    "0.15%": Si_150_LayerStack,
-    "0.75": Si_zp45_LayerStack,
-    "1.5%": Si_zp75_LayerStack,
+    "0.45": Si_zp45_LayerStack,
+    "0.75%": Si_zp75_LayerStack,
+    "1.5%": Si_150_LayerStack,
 }
 
 if __name__ == "__main__":
