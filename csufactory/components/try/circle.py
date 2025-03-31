@@ -2,15 +2,14 @@ import numpy as np
 from numpy import cos, sin, pi
 
 from csufactory.component import Component
-from csufactory.generic_tech.layer_map import CSULAYER
-from csufactory.show_gds import show
-from csufactory.show_gds import export_gds
+from csufactory.generic_tech.layer_map_csu import CSULAYER
 
 
 def circle(
         radius: float =10, 
         angle_resolution: float = 2.5, 
-        layer=CSULAYER.WG,):
+        layer=CSULAYER.WG,
+    )-> Component:
     """ 生成一个简单的圆.
 
     参数:
@@ -31,5 +30,4 @@ def circle(
 
 if __name__ == "__main__":
     c = circle()
-    gds_path = export_gds(c, filename="circle.gds") 
-    show(gds_path)
+    c.show()

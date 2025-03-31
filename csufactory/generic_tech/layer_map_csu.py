@@ -1,14 +1,7 @@
-import gdsfactory as gf
-
 Layer = tuple[int, int]
 
-class CSULAYER(gf.LayerEnum):              #gf.LayerEnum
+class CSULAYER():              #gf.LayerEnum
     """ CSUPDK 层映射定义 """
-
-    layout = gf.constant(gf.kcl.layout)
-
-#gf.LayerEnum：继承 gdsfactory 的 LayerEnum，用于存储 PDK 层信息，类似于 dict 但更加结构化。
-#gf.kcl.layout 是 kfactory 的 layout 管理器。gf.constant() 确保 layout 不会被修改。
 
     # 关于工艺流程的层，如下：
     Si_Sub: Layer = (88, 0)               #基板都是这一层,无论是Quartz还是Silicon
@@ -80,8 +73,8 @@ class CSULAYER(gf.LayerEnum):              #gf.LayerEnum
 
     # classmethod 是一个类型注解丰富的类，模拟了 Python 内置的 classmethod 装饰器的行为。
     # 它通过泛型和类型注解提供了更详细的类型信息，使得在使用时可以获得更好的类型检查和代码提示。
-    # @classmethod
-    # def get_layer(cls, name):
-    #     """ 获取层定义 """
-    #     return getattr(cls, name, None)
+    @classmethod
+    def get_layer(cls, name):
+        """ 获取层定义 """
+        return getattr(cls, name, None)
 

@@ -92,7 +92,7 @@ def mmi(
             )
         )
     for i, y in enumerate(y_signal_out_list):
-        port_name = f"out_{i+1}"  # 唯一端口名（如 in_0, in_1...）
+        port_name = f"out_{i+1}"  # 唯一端口名（如 out_0, in_1...）
         ports.append(
             gf.Port(
                 name=port_name,
