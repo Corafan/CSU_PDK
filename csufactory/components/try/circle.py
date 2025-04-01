@@ -29,5 +29,6 @@ def circle(
 
 
 if __name__ == "__main__":
-    c = circle()
-    c.show()
+    from csufactory.component import boolean_operation
+    c1 = circle()
+    c2 = circle(radius=5)

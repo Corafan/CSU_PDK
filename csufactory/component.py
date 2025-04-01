@@ -6,20 +6,8 @@ import json
 import datetime
 import numpy as np
 import math
+from typing import List, Literal
 from csufactory.generic_tech.layer_map_csu import CSULAYER
-
-class Port:
-    """ 端口类：定义器件的光学端口，包括位置、方向、层等信息 """
-
-    def __init__(self, name, position, width, orientation, layer=CSULAYER.PORT):
-        self.name = name
-        self.position = np.array(position)  # 端口坐标
-        self.width = width  # 波导宽度
-        self.orientation = orientation  # 角度 (0: 右, 90: 上, 180: 左, 270: 下)
-        self.layer = layer  # 端口层信息
-
-    def __repr__(self):
-        return f"Port(name={self.name}, pos={self.position}, width={self.width}, orient={self.orientation})"
 
 class Component:
     def __init__(self, name="default"):
@@ -154,6 +142,7 @@ class Component:
             dx: x方向的平移量
             dy: y方向的平移量
         """
+        # print(f"移动前: {[polygon.points for polygon in self.cell.polygons]}")
         # 平移所有多边形
         for polygon in self.cell.polygons:
             polygon.translate(dx, dy)
@@ -162,6 +151,27 @@ class Component:
         for port_name, port_data in self.ports.items():
             x, y = port_data["position"]
             port_data["position"] = (x + dx, y + dy)
+        # print(f"移动后: {[polygon.points for polygon in self.cell.polygons]}")
+
+    def move_to(
+            self,
+            destination: tuple,
+            current_position: tuple
+    ):
+        """
+        将组件移动到指定位置(以组件原点为基准)
+
+        参数:
+            position: 新的原点位置 (x, y)
+        """
+        # 计算需要移动的量
+        dx = destination[0] - current_position[0]
+        dy = destination[1] - current_position[1]
+
+        print(f"当前坐标: {current_position}, 目标坐标: {destination}, 平移量: ({dx}, {dy})")
+        # 调用平移方法
+        self.move(dx,dy)
+
     def movex(self, dx: float):
         """
         x方向平移整个组件及其所有元素
@@ -223,21 +233,6 @@ class Component:
             # 更新端口方向
             port_data["orientation"] = (port_data["orientation"] + angle) % 360
 
-    # def move_to(self, position: tuple):
-    #     """
-    #     将组件移动到指定位置(以组件原点为基准)
-    #
-    #     参数:
-    #         position: 新的原点位置 (x, y)
-    #     """
-    #     # 计算当前原点(假设初始在(0,0))
-    #     current_origin = (0, 0)
-    #     # 计算需要移动的量
-    #     dx = position[0] - current_origin[0]
-    #     dy = position[1] - current_origin[1]
-    #     # 调用平移方法
-    #     self.move(dx,dy)
-
     def add_ref(self, component):
         """ 引用其他组件（嵌套） """
         ref = gdstk.Reference(component.cell)
@@ -251,15 +246,179 @@ class Component:
         all_points = np.vstack([poly.points for poly in self.cell.polygons])
         return np.min(all_points, axis=0), np.max(all_points, axis=0)
 
+    def connect(self, port1_name: str, component2, port2_name: str, connection_length: float = None):
+        """
+        连接两个组件的端口
+
+        参数:
+            port1_name: 当前组件的端口名
+            component2: 要连接的另一个组件
+            port2_name: 另一个组件的端口名
+            connection_length: 可选，指定连接波导的长度
+                            None表示直接连接(端口对齐)
+        """
+        # 获取端口信息
+        port1 = self.ports.get(port1_name)
+        port2 = component2.ports.get(port2_name)
+
+        if not port1 or not port2:
+            raise ValueError("指定的端口不存在")
+
+        # 提取端口位置和方向
+        x1, y1 = port1["position"]
+        x2, y2 = port2["position"]
+        angle1 = port1["orientation"]
+        angle2 = port2["orientation"]
+
+        # 检查端口方向是否匹配(相差180度)
+        if (angle1 - angle2) % 180 != 0:
+            print(f"警告: 端口方向不匹配 ({angle1}° 和 {angle2}°)")
+
+        # 计算连接类型
+        if connection_length is None:
+            # 直接连接 - 移动component2使其端口对齐
+            if angle1 == 0:  # 向右
+                dx = x1 - x2
+                dy = y1 - y2
+            elif angle1 == 180:  # 向左
+                dx = x1 - x2
+                dy = y1 - y2
+            elif angle1 == 90:  # 向下
+                dx = x1 - x2
+                dy = y1 - y2
+            elif angle1 == 270:  # 向上
+                dx = x1 - x2
+                dy = y1 - y2
+            component2.move(dx, dy)
+        else:
+            # 使用指定长度的波导连接
+            if angle1 == 0:  # 向右
+                start_point = (x1, y1)
+                end_point = (x1 + connection_length, y1)
+            elif angle1 == 180:  # 向左
+                start_point = (x1, y1)
+                end_point = (x1 - connection_length, y1)
+            elif angle1 == 90:  # 向下
+                start_point = (x1, y1)
+                end_point = (x1, y1 - connection_length)
+            elif angle1 == 270:  # 向上
+                start_point = (x1, y1)
+                end_point = (x1, y1 + connection_length)
+
+            # 添加连接波导
+            width = port1["width"]
+            self.add_polygon([
+                (start_point[0], start_point[1] - width / 2),
+                (end_point[0], end_point[1] - width / 2),
+                (end_point[0], end_point[1] + width / 2),
+                (start_point[0], start_point[1] + width / 2)
+            ], layer=port1["layer"])
+
+            # 移动component2使端口对齐
+            if angle1 == 0:  # 向右
+                dx = end_point[0] - x2
+                dy = end_point[1] - y2
+            elif angle1 == 180:  # 向左
+                dx = end_point[0] - x2
+                dy = end_point[1] - y2
+            elif angle1 == 90:  # 向下
+                dx = end_point[0] - x2
+                dy = end_point[1] - y2
+            elif angle1 == 270:  # 向上
+                dx = end_point[0] - x2
+                dy = end_point[1] - y2
+            component2.move(dx, dy)
+
+    def boolean_operation(self, other, operation="union", layer=None):
+        """
+        执行布尔操作(并集、交集、差集)
+
+        参数:
+            other: 另一个Component对象
+            operation: "union"(并集), "intersection"(交集), "difference"(差集)
+            layer: 结果多边形的层，None表示使用第一个多边形的层
+        """
+        # 获取所有多边形
+        polygons1 = self.cell.polygons
+        polygons2 = other.cell.polygons
+
+        if not polygons1 or not polygons2:
+            raise ValueError("至少有一个组件没有多边形")
+
+        # 确定结果层
+        result_layer = layer if layer is not None else polygons1[0].layer
+
+        # 收集所有多边形
+        all_polygons1 = [poly for poly in polygons1]
+        all_polygons2 = [poly for poly in polygons2]
+
+        # 执行布尔操作
+        if operation == "union":
+            result = gdstk.boolean(all_polygons1, all_polygons2, "or")
+        elif operation == "intersection":
+            result = gdstk.boolean(all_polygons1, all_polygons2, "and")
+        elif operation == "difference":
+            result = gdstk.boolean(all_polygons1, all_polygons2, "not")
+        else:
+            raise ValueError(f"未知的布尔操作: {operation}")
+
+        # 清除原有多边形并添加结果
+        self.cell.polygons.clear()
+        for poly in result:
+            if isinstance(poly, gdstk.Polygon):
+                self.add_polygon(poly.points, layer=result_layer)
+            else:
+                # 处理其他可能的返回类型
+                for p in poly:
+                    self.add_polygon(p.points, layer=result_layer)
+
+        return self
+
+class Port:
+    """ 端口类：定义器件的光学端口，包括位置、方向、层等信息 """
+
+    def __init__(self, name, position, width, orientation, layer=CSULAYER.PORT):
+        self.name = name
+        self.position = np.array(position)  # 端口坐标
+        self.width = width  # 波导宽度
+        self.orientation = orientation  # 角度 (0: 右, 90: 上, 180: 左, 270: 下)
+        self.layer = layer  # 端口层信息
+
+    def __repr__(self):
+        return f"Port(name={self.name}, pos={self.position}, width={self.width}, orient={self.orientation})"
+
 
 if __name__ == "__main__":
-    c = Component(name="waveguide_with_ports")
-    c.add_polygon([(0, 0), (0.5, 0), (0.5, 10), (0, 10)], layer=CSULAYER.WG)
 
-    # 添加端口并生成三角形
-    c.add_ports("input", position=(0.25, 0), width=0.5, orientation=90)  # 端口朝向左
-    c.add_ports("output", position=(0.25, 10), width=0.5, orientation=270)  # 端口朝向右
+    # c = Component(name="waveguide_with_ports")
+    # c.add_polygon([(0, 0), (0.5, 0), (0.5, 10), (0, 10)], layer=CSULAYER.WG)
+    #
+    # # 添加端口并生成三角形
+    # c.add_ports("input", position=(0.25, 0), width=0.5, orientation=90)  # 端口朝向左
+    # c.add_ports("output", position=(0.25, 10), width=0.5, orientation=270)  # 端口朝向右
+    #
+    # # 导出并查看 GDS 文件
+    # c.show()
 
-    # 导出并查看 GDS 文件
-    c.show()
+    # # 创建两个组件
+    # c1 = Component(name="waveguide1")
+    # c1.add_polygon([(0, 0), (10, 0), (10, 5), (0, 5)], layer=CSULAYER.WG)
+    # c1.add_polygon([(5, 2), (15, 2), (15, 7), (5, 7)])
+    # c1.show()
 
+    # 创建两个组件
+    comp1 = Component("component1")
+    comp2 = Component("component2")
+
+    # 添加一些多边形
+    comp1.add_polygon([(0, 0), (10, 0), (10, 5), (0, 5)], layer=CSULAYER.WG)
+    comp2.add_polygon([(5, 2), (15, 2), (15, 7), (5, 7)], layer=CSULAYER.WG)
+
+    # 2. 布尔操作示例
+    result = comp1.boolean_operation(comp2,"union")  # 并集
+    # 或者:
+    # result = comp1.difference(comp2)  # 差集
+    # result = comp1.intersection(comp2)  # 交集
+
+    # 显示结果
+    result.show()
