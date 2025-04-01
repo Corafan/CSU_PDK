@@ -11,6 +11,7 @@ from gdsfactory.technology import LayerViews
 
 from gdsfactory.cross_section import get_cross_sections, strip
 from gdsfactory.get_factories import get_cells
+import inspect
 
 
 # 定义波导宽度，这些值用于 cross_section 定义，确保所有器件使用统一的参数。
@@ -139,25 +140,63 @@ PDK = gf.Pdk(
 # 设为默认 PDK
 PDK.activate()
 
+#用户交互：
+def get_function_params(func):
+    """获取函数的参数列表"""
+    signature = inspect.signature(func)
+    params = signature.parameters
+    return [param for param in params.values()]
+
+def prompt_user_for_params(params):
+    """与用户对话，获取输入的参数"""
+    param_values = {}
+    for param in params:
+        user_input = input(f"请输入参数 `{param.name}` (默认值: {param.default}): ")
+        if user_input:
+            # 如果用户输入了值，则转换为对应的类型
+            if isinstance(param.default, float):
+                param_values[param.name] = float(user_input)
+            elif isinstance(param.default, int):
+                param_values[param.name] = int(user_input)
+            else:
+                param_values[param.name] = user_input
+        else:
+            # 如果用户没有输入值，则使用默认值
+            param_values[param.name] = param.default
+    return param_values
+
+def run_component_function(func, params):
+    """运行组件函数，并传入用户输入的参数"""
+    param_values = prompt_user_for_params(params)
+    component = func(**param_values)
+    return component
+
 if __name__ == "__main__":
-    from csufactory.components.awg import free_propagation_region
-    c =awg(
-    inputs= 1,
-    arms= 9,                                   #阵列波导数量
-    outputs= 1,
-    free_propagation_region_input_function=partial(free_propagation_region, width1=2, width2=20.0),
-    free_propagation_region_output_function=partial(free_propagation_region, width1=2, width2=20.0),
-    fpr_spacing= 50,                            #输入/输出FPR的间距
-    arm_spacing= 1,                             #阵列波导间距
-    )
-    c=coupler()
-    c =y_branch()
-    c=mmi()
-    c=star_coupler()
-    c=arc()
-    c=ring_coupler()
-    c=ring_resonator()
-    c=s_bend()
-    c=crossing()
-    c=grating()
-    c.show()
+    # from csufactory.components.awg import free_propagation_region
+    # c =awg(
+    # inputs= 1,
+    # arms= 9,                                   #阵列波导数量
+    # outputs= 1,
+    # free_propagation_region_input_function=partial(free_propagation_region, width1=2, width2=20.0),
+    # free_propagation_region_output_function=partial(free_propagation_region, width1=2, width2=20.0),
+    # fpr_spacing= 50,                            #输入/输出FPR的间距
+    # arm_spacing= 1,                             #阵列波导间距
+    # )
+    # c=coupler()
+    # c =y_branch()
+    # c=mmi()
+    # c=star_coupler()
+    # c=arc()
+    # c=ring_coupler()
+    # c=ring_resonator()
+    # c=s_bend()
+    # c=crossing()
+    # c=grating()
+    # c.show()
+
+    # 获取组件函数的参数
+    params = get_function_params(awg)
+    # 与用户对话并获取参数
+    component = run_component_function(awg, params)
+    # 显示生成的组件
+    component.show()

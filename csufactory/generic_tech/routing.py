@@ -91,10 +91,8 @@
 # listb3.pack()
 # root.mainloop()  # 进入消息循环
 
-import klayout.db as kdb
-import klayout.lay as lay
 import os
-
+from kfactory.kcell import kdb,lay
 
 def gds_to_png_klayout(gds_path, png_path, resolution=2048):
     """

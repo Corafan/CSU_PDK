@@ -18,8 +18,8 @@ def crossing(
     """Returns a cross from two rectangles of length and width.
 
     Args:
-        length: float half of Length of the cross from one end to the other.(从中心正方形到端口的距离）
-        width: float Width of the arms of the cross.
+        length: float, half of Length of the cross from one end to the other.(从中心正方形到端口的距离）
+        width: float, Width of the arms of the cross.
         layer: layer for geometry.
         port_type: None, optical, electrical.
         （ports按顺时针旋转，o1在左侧）

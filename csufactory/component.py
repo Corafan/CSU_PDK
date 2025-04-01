@@ -9,7 +9,7 @@ import math
 from typing import List, Literal
 from csufactory.generic_tech.layer_map_csu import CSULAYER
 
-class Component:
+class Component():
     def __init__(self, name="default"):
         self.name = name
         self.cell = gdstk.Cell(name)
@@ -348,17 +348,19 @@ class Component:
         # 确定结果层
         result_layer = layer if layer is not None else polygons1[0].layer
 
-        # 收集所有多边形
-        all_polygons1 = [poly for poly in polygons1]
-        all_polygons2 = [poly for poly in polygons2]
+        # # 收集所有多边形
+        # all_polygons1 = [poly for poly in polygons1]
+        # all_polygons2 = [poly for poly in polygons2]
 
         # 执行布尔操作
-        if operation == "union":
-            result = gdstk.boolean(all_polygons1, all_polygons2, "or")
-        elif operation == "intersection":
-            result = gdstk.boolean(all_polygons1, all_polygons2, "and")
-        elif operation == "difference":
-            result = gdstk.boolean(all_polygons1, all_polygons2, "not")
+        if operation == "or":
+            result = gdstk.boolean(polygons1, polygons2, "or")
+        elif operation == "and":
+            result = gdstk.boolean(polygons1, polygons2, "and")
+        elif operation == "not":
+            result = gdstk.boolean(polygons1, polygons2, "not")
+        elif operation == "xor":
+            result = gdstk.boolean(polygons1, polygons2, "xor")
         else:
             raise ValueError(f"未知的布尔操作: {operation}")
 
@@ -415,10 +417,7 @@ if __name__ == "__main__":
     comp2.add_polygon([(5, 2), (15, 2), (15, 7), (5, 7)], layer=CSULAYER.WG)
 
     # 2. 布尔操作示例
-    result = comp1.boolean_operation(comp2,"union")  # 并集
-    # 或者:
-    # result = comp1.difference(comp2)  # 差集
-    # result = comp1.intersection(comp2)  # 交集
+    result =comp1.boolean_operation(comp1,"xor")  # 并集
 
     # 显示结果
     result.show()

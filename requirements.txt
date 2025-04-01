@@ -1,0 +1,13 @@
+gdsfactory==8.20.0
+numpy
+
+
+#没有gdsfactory的
+gdstk
+subprocess
+os
+socket
+json
+datetime
+numpy
+math

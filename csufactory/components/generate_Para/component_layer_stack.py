@@ -8,7 +8,7 @@ from csufactory.technology.get_klayout_3d_script import get_klayout_3d_script
 from csufactory.generic_tech.layer_stack import LayerStackParameters as Para
 from csufactory.components.awg import free_propagation_region
 from csufactory.components.awg import awg
-from csufactory.components.MMI import mmi
+from csufactory.components.mmi import mmi
 nm = 1e-3
 
 

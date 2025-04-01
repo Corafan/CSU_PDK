@@ -132,10 +132,6 @@ def awg(
     # layer: tuple = LAYER.WG,
 ) -> Component:
     """Returns a basic Arrayed Waveguide grating.
-
-    To simulate you can use
-    https://github.com/dnrobin/awg-python
-
     Args:
         inputs: number of intputs.
         arms: number of arms.
@@ -232,5 +228,4 @@ if __name__ == "__main__":
     c.write_gds(output_gds_path)
     print(f"GDS 文件已保存至: {output_gds_path}")
     c.show()
-
 
