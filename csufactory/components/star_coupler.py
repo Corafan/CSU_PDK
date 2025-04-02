@@ -1,7 +1,7 @@
 #原创:
 import gdsfactory as gf
 from gdsfactory.component import Component
-from gdsfactory.typings import LayerSpec
+from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 from gdsfactory.boolean import boolean
 from gdsfactory.typings import CrossSectionSpec
 import numpy as np
@@ -12,7 +12,6 @@ def star_coupler(
     body_size: tuple[float, float] = (2.5, 4),  # 椭圆主耦合区域 a和b轴
     waveguide_length: float = 3,  # 波导的长度
     waveguide_width: float = 0.5,  # 波导的宽度
-    layer: LayerSpec = "WG",  # GDS 图层
     cross_section: CrossSectionSpec = "strip",
 ) -> Component:
     """生成一个星型耦合器（star coupler），采用从中心发散的波导。
@@ -22,8 +21,9 @@ def star_coupler(
         body_size: 中心区域（圆形）的半径。
         waveguide_length: 波导的长度。
         waveguide_width: 波导的宽度。
-        layer: GDS 图层。
+        cross_section: 横截面类型，不建议修改。
     """
+    layer=LAYER.WG
     c = gf.Component()
 
     # 1. 创建基础椭圆

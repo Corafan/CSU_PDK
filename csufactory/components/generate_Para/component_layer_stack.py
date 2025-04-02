@@ -2,6 +2,8 @@ import gdsfactory as gf
 import datetime
 from functools import partial
 
+from botocore.utils import percent_encode_sequence
+
 from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 from gdsfactory.technology import LayerLevel, LayerStack, LogicalLayer
 from csufactory.technology.get_klayout_3d_script import get_klayout_3d_script
@@ -726,69 +728,127 @@ CSU_LayerStacks = {
 }
 
 if __name__ == "__main__":
-    #打印一个层栈信息并保存：
-    #定义保存路径和文件名
-    output_file = fr"C:\Windows\System32\CSU_PDK/csufactory/all_output_files/parameter/Si_zp45_LayerStack.txt"
-    #打开文件进行写入
-    with open(output_file, "w") as file:
-        # 遍历层信息并将输出写入文件
-        print("将Si_zp45_LayerStack中的主要参数，保存至下方文件内")
-        file.write("Design Rules for 0.45% Delta N index (um)\n"
-                   "\t\tParameter\n")
-        for key, value in Si_zp45_LayerStack.layers['substrate'].info.items():
-            file.write(f"{key}: {value}\n")
-        file.write("\nlayer_stack_parameter")
-        for layername, layer in Si_zp45_LayerStack.layers.items():
-            file.write(
-                f"\nLayerName: {layername}:\n "
-                f"\tThickness: {layer.thickness},\n"
-                f"\tThickness_tolerance: {layer.thickness_tolerance}, \n"
-                f"\tMaterial: {layer.material}, \n"
-                f"\tZmin: {layer.zmin}, \n"
-                f"\tDerivedLayer: {layer.derived_layer}\n"
-            )
-            #除去substrate的info
-            if layername != "substrate" and layer.info:
-                file.write("\tInfo:\n")
-                for key, value in layer.info.items():
-                    file.write(f"\t\t{key}: {value}\n")  #每个 info 参数换行
-            # #打印所有info
-            # if hasattr(layer, "info") and isinstance(layer.info, dict):
-            #     file.write("\tInfo:\n")  # 添加 Info 标题
-            #     for key, value in layer.info.items():
-            #         file.write(f"\t\t{key}: {value}\n")  # 每个键值对占一行
-    print(f"TXT文件已保存至: {output_file}")
+    import os
+    from typing import Dict, Any
+    def export_layer_stacks(
+            CSU_LayerStacks: Dict[str, Any] = {
+                "0.45%": "Si_zp45_LayerStack",
+                "0.75%": "Si_zp75_LayerStack",
+                "1.5%": "Si_150_LayerStack"
+            },
+            output_dir: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter",
+            combined_filename: str = "CSU_LayerStack.txt"
+    ) -> None:
+        """
+        导出层栈信息（自动判断输出单独文件或合并文件）
 
+        参数:
+            CSU_LayerStacks: 层栈字典 {百分比: 层栈变量名}
+            output_dir: 输出目录路径
+            combined_filename: 合并文件名（仅在多个层栈时生成）
+        """
+        # 确保输出目录存在
+        os.makedirs(output_dir, exist_ok=True)
 
-####打印三个不同的layer_stack:
-    output_file2 = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter\CSU_LayerStack.txt"
-    #打开文件进行写入
-    with open(output_file2, "w") as file:
-        # 遍历层信息并将输出写入文件
-        print("将CSU_LayerStack中的主要参数，保存至下方文件内")
-        for stack_name, layer_stack in CSU_LayerStacks.items():
-            file.write(f"\n===== {stack_name} =====\n")
-            file.write(f"Design Rules for {stack_name} Delta N index (um)\n"
-                       "\t\tParameter\n")
-            for key, value in layer_stack.layers['substrate'].info.items():
-                file.write(f"{key}: {value}\n")
-            for layername, layer in layer_stack.layers.items():
-                file.write(
-                    f"\nLayerName: {layername}:\n "
-                    f"\tThickness: {layer.thickness},\n"
-                    f"\tThickness_tolerance: {layer.thickness_tolerance}, \n"
-                    f"\tMaterial: {layer.material}, \n"
-                    # f"\tinfo: {layer.info}, \n"
-                    f"\tZmin: {layer.zmin}, \n"
-                    f"\tDerivedLayer: {layer.derived_layer}\n"
-                )
-                # 修改 info 的存储方式
-                if layername != "substrate" and layer.info:
-                    file.write("\tInfo:\n")
-                    for key, value in layer.info.items():
-                        file.write(f"\t\t{key}: {value}\n")  # 每个 info 参数换行
+        # 判断是否为单个层栈
+        is_single = len(CSU_LayerStacks) == 1
 
-    print(f"TXT文件已保存至: {output_file2}")
+        if is_single:
+            # 单个层栈模式：只生成单独文件
+            percent_str, layer_stack_name = next(iter(CSU_LayerStacks.items()))
+            layer_stack = globals().get(layer_stack_name)
+
+            if not layer_stack:
+                print(f"错误: 未找到层栈定义 {layer_stack_name}")
+                return
+
+            # 生成单独文件名
+            single_filename = f"LayerStack_{percent_str.replace('%', 'percent')}.txt"
+            single_path = os.path.join(output_dir, single_filename)
+
+            with open(single_path, "w", encoding="utf-8") as single_file:
+                # 写入文件头
+                print(f"将{layer_stack_name}中的主要参数，保存至下方文件内")
+                single_file.write(f"Design Rules for {percent_str} Delta N index (um)\n")
+                single_file.write("\t\tParameter\n")
+
+                # 写入基底信息
+                if 'substrate' in getattr(layer_stack, 'layers', {}):
+                    substrate = layer_stack.layers['substrate']
+                    if hasattr(substrate, 'info'):
+                        for key, value in substrate.info.items():
+                            single_file.write(f"{key}: {value}\n")
+
+                # 写入各层信息
+                for layer_name, layer in layer_stack.layers.items():
+                    single_file.write(f"\nLayerName: {layer_name}:\n")
+                    single_file.write(f"\tThickness: {layer.thickness},\n")
+                    single_file.write(f"\tThickness_tolerance: {layer.thickness_tolerance},\n")
+                    single_file.write(f"\tMaterial: {layer.material},\n")
+                    single_file.write(f"\tZmin: {layer.zmin},\n")
+                    single_file.write(f"\tDerivedLayer: {layer.derived_layer}\n")
+
+                    if layer_name != "substrate" and getattr(layer, 'info', None):
+                        single_file.write("\tInfo:\n")
+                        for key, value in layer.info.items():
+                            single_file.write(f"\t\t{key}: {value}\n")
+
+            print(f"TXT文件已保存至: {single_path}")
+
+        else:
+            # 多个层栈模式：生成合并文件和单独文件
+            combined_path = os.path.join(output_dir, combined_filename)
+            with open(combined_path, "w", encoding="utf-8") as combined_file:
+                print("将CSU_LayerStack中的主要参数，保存至下方文件内")
+
+                for percent_str, layer_stack_name in CSU_LayerStacks.items():
+                    layer_stack = globals().get(layer_stack_name)
+                    if not layer_stack:
+                        print(f"警告: 未找到层栈定义 {layer_stack_name}，跳过")
+                        continue
+
+                    # 写入合并文件
+                    combined_file.write(f"\n===== {percent_str} =====\n")
+                    combined_file.write(f"Design Rules for {percent_str} Delta N index (um)\n")
+                    combined_file.write("\t\tParameter\n")
+
+                    # 生成单独文件
+                    single_filename = f"LayerStack_{percent_str.replace('%', 'percent')}.txt"
+                    single_path = os.path.join(output_dir, single_filename)
+
+                    with open(single_path, "w", encoding="utf-8") as single_file:
+                        # 写入单独文件头
+                        single_file.write(f"Design Rules for {percent_str} Delta N index (um)\n")
+                        single_file.write("\t\tParameter\n")
+
+                        # 处理公共内容
+                        for file in [combined_file, single_file]:
+                            # 写入基底信息
+                            if 'substrate' in getattr(layer_stack, 'layers', {}):
+                                substrate = layer_stack.layers['substrate']
+                                if hasattr(substrate, 'info'):
+                                    for key, value in substrate.info.items():
+                                        file.write(f"{key}: {value}\n")
+
+                            # 写入各层信息
+                            for layer_name, layer in layer_stack.layers.items():
+                                file.write(f"\nLayerName: {layer_name}:\n")
+                                file.write(f"\tThickness: {layer.thickness},\n")
+                                file.write(f"\tThickness_tolerance: {layer.thickness_tolerance},\n")
+                                file.write(f"\tMaterial: {layer.material},\n")
+                                file.write(f"\tZmin: {layer.zmin},\n")
+                                file.write(f"\tDerivedLayer: {layer.derived_layer}\n")
+
+                                if layer_name != "substrate" and getattr(layer, 'info', None):
+                                    file.write("\tInfo:\n")
+                                    for key, value in layer.info.items():
+                                        file.write(f"\t\t{key}: {value}\n")
+
+                    print(f"已生成单独文件: {single_filename}")
+
+            print(f"\n合并文件已保存至: {combined_path}")
+
+    export_layer_stacks()
 
 
     #输出仅有awg的gds文件，并命名、保存：
@@ -811,7 +871,6 @@ if __name__ == "__main__":
     s =c.to_3d(layer_stack=Si_zp45_LayerStack)
     s.show()
 
-
     #生成仅有awg的3d预览图：
     #用新的变量可以改变器件的参数s
     # c = awg(
@@ -833,3 +892,199 @@ if __name__ == "__main__":
         file.write(get_klayout_3d_script(Si_zp45_LayerStack))
 
     print(f"GDS 文件已保存至: {output_file}")
+
+
+    #合并打印一个文件版：
+    # import os
+    # from typing import Dict, Any
+    #
+    # def export_combined_layer_stack_info(
+    #         CSU_LayerStacks: Dict[str, Any] = {
+    #             "0.45%": "Si_zp45_LayerStack",
+    #             "0.75%": "Si_zp75_LayerStack",
+    #             "1.5%": "Si_150_LayerStack"
+    #         },
+    #         output_file: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter\CSU_LayerStack.txt"
+    # ) -> None:
+    #     """
+    #     将多个层栈信息合并导出到一个文本文件中
+    #
+    #     参数:
+    #         CSU_LayerStacks: 层栈字典 {百分比: 层栈变量名}
+    #         output_file: 输出文件完整路径
+    #
+    #     返回:
+    #         None (结果直接保存到文件)
+    #     """
+    #     # 创建输出目录(如果不存在)
+    #     os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    #
+    #     with open(output_file, "w", encoding="utf-8") as f:
+    #         print("将CSU_LayerStack中的主要参数，保存至下方文件内")
+    #
+    #         for percent_str, layer_stack_name in CSU_LayerStacks.items():
+    #             try:
+    #                 # 动态获取层栈对象
+    #                 layer_stack = globals().get(layer_stack_name)
+    #                 if layer_stack is None:
+    #                     print(f"警告: 未找到层栈定义 {layer_stack_name}，跳过")
+    #                     continue
+    #
+    #                 # 写入层栈标题
+    #                 f.write(f"\n===== {percent_str} =====\n")
+    #                 f.write(f"Design Rules for {percent_str} Delta N index (um)\n")
+    #                 f.write("\t\tParameter\n")
+    #
+    #                 # 写入基底(substrate)信息
+    #                 if hasattr(layer_stack, 'layers') and 'substrate' in layer_stack.layers:
+    #                     substrate = layer_stack.layers['substrate']
+    #                     if hasattr(substrate, 'info'):
+    #                         for key, value in substrate.info.items():
+    #                             f.write(f"{key}: {value}\n")
+    #
+    #                 # 写入各层信息
+    #                 for layer_name, layer in layer_stack.layers.items():
+    #
+    #                     f.write(f"\nLayerName: {layer_name}:\n")
+    #                     f.write(f"\tThickness: {layer.thickness},\n")
+    #                     f.write(f"\tThickness_tolerance: {layer.thickness_tolerance},\n")
+    #                     f.write(f"\tMaterial: {layer.material},\n")
+    #                     f.write(f"\tZmin: {layer.zmin},\n")
+    #                     f.write(f"\tDerivedLayer: {layer.derived_layer}\n")
+    #
+    #                     if layer_name != "substrate" and layer.info:
+    #                         f.write("\tInfo:\n")
+    #                         for key, value in layer.info.items():
+    #                             f.write(f"\t\t{key}: {value}\n")  #每个 info 参数换行
+    #
+    #             except Exception as e:
+    #                 print(f"处理 {layer_stack_name} 时出错: {str(e)}")
+    #                 continue
+    #
+    #     print(f"TXT文件已保存至: {output_file}")
+
+
+    #第一版
+    # import os
+    # def export_layer_stack_info(
+    #         layer_stack_name: str = "Si_zp45_LayerStack",
+    #         output_dir: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter",
+    #         percent: float = 0.45,
+    #         file_prefix: str = "LayerStack"
+    # ) -> None:
+    #     """
+    #     导出层栈信息到文本文件
+    #
+    #     参数:
+    #         layer_stack_name: 层栈变量名 (默认: "Si_zp45_LayerStack")
+    #         output_dir: 输出目录路径 (默认: CSU_PDK参数目录)
+    #         percent: 折射率变化百分比 (默认: 0.45)
+    #         file_prefix: 输出文件名前缀 (默认: "LayerStack")
+    #
+    #     返回:
+    #         None (结果直接保存到文件)
+    #     """
+    #     # 动态获取层栈对象
+    #     layer_stack = globals().get(layer_stack_name)
+    #     if layer_stack is None:
+    #         raise ValueError(f"未找到层栈定义: {layer_stack_name}")
+    #
+    #     # 构建输出文件路径
+    #     output_filename = f"{file_prefix}_{percent * 100:.0f}percent.txt"
+    #     output_path = os.path.join(output_dir, output_filename)
+    #
+    #     # 创建输出目录(如果不存在)
+    #     os.makedirs(output_dir, exist_ok=True)
+    #     with open(output_path, "w", encoding="utf-8") as f:
+    #         # 写入文件头
+    #         print(f"将{layer_stack_name}中的主要参数，保存至下方文件内")
+    #         f.write(f"Design Rules for {percent * 100:.2f}% Delta N index (um)\n")
+    #         f.write("\t\tParameter\n")
+    #
+    #         # 写入基底(substrate)信息
+    #         if 'substrate' in layer_stack.layers:
+    #             for key, value in layer_stack.layers['substrate'].info.items():
+    #                 f.write(f"{key}: {value}\n")
+    #
+    #         # 写入各层信息
+    #         f.write("\nlayer_stack_parameter\n")
+    #         for layer_name, layer in layer_stack.layers.items():
+    #
+    #             f.write(f"\nLayerName: {layer_name}:\n")
+    #             f.write(f"\tThickness: {layer.thickness},\n")
+    #             f.write(f"\tThickness_tolerance: {layer.thickness_tolerance},\n")
+    #             f.write(f"\tMaterial: {layer.material},\n")
+    #             f.write(f"\tZmin: {layer.zmin},\n")
+    #             f.write(f"\tDerivedLayer: {layer.derived_layer}\n")
+    #
+    #             if layer_name != "substrate" and layer.info:
+    #                         f.write("\tInfo:\n")
+    #                         for key, value in layer.info.items():
+    #                             f.write(f"\t\t{key}: {value}\n")  #每个 info 参数换行
+    #             print(f"TXT文件已保存至: {output_path}")
+
+
+#     output_file = fr"C:\Windows\System32\CSU_PDK/csufactory/all_output_files/parameter/Si_zp45_LayerStack.txt"
+#     #打印一个层栈信息并保存：
+#     #定义保存路径和文件名
+#     #打开文件进行写入
+#     with open(output_file, "w") as file:
+#         # 遍历层信息并将输出写入文件
+#         print(f"将{layer_stack_name}中的主要参数，保存至下方文件内")
+#         file.write("Design Rules for {percent}% Delta N index (um)\n"
+#                    "\t\tParameter\n")
+#         for key, value in Si_zp45_LayerStack.layers['substrate'].info.items():
+#             file.write(f"{key}: {value}\n")
+#         file.write("\nlayer_stack_parameter")
+#         for layername, layer in Si_zp45_LayerStack.layers.items():
+#             file.write(
+#                 f"\nLayerName: {layername}:\n "
+#                 f"\tThickness: {layer.thickness},\n"
+#                 f"\tThickness_tolerance: {layer.thickness_tolerance}, \n"
+#                 f"\tMaterial: {layer.material}, \n"
+#                 f"\tZmin: {layer.zmin}, \n"
+#                 f"\tDerivedLayer: {layer.derived_layer}\n"
+#             )
+#             #除去substrate的info
+#             if layername != "substrate" and layer.info:
+#                 file.write("\tInfo:\n")
+#                 for key, value in layer.info.items():
+#                     file.write(f"\t\t{key}: {value}\n")  #每个 info 参数换行
+#             # #打印所有info
+#             # if hasattr(layer, "info") and isinstance(layer.info, dict):
+#             #     file.write("\tInfo:\n")  # 添加 Info 标题
+#             #     for key, value in layer.info.items():
+#             #         file.write(f"\t\t{key}: {value}\n")  # 每个键值对占一行
+#     print(f"TXT文件已保存至: {output_file}")
+#
+
+# ####打印三个不同的layer_stack:
+#     output_file2 = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter\CSU_LayerStack.txt"
+#     #打开文件进行写入
+#     with open(output_file2, "w") as file:
+#         # 遍历层信息并将输出写入文件
+#         print("将CSU_LayerStack中的主要参数，保存至下方文件内")
+#         for stack_name, layer_stack in CSU_LayerStacks.items():
+#             file.write(f"\n===== {stack_name} =====\n")
+#             file.write(f"Design Rules for {stack_name} Delta N index (um)\n"
+#                        "\t\tParameter\n")
+#             for key, value in layer_stack.layers['substrate'].info.items():
+#                 file.write(f"{key}: {value}\n")
+#             for layername, layer in layer_stack.layers.items():
+#                 file.write(
+#                     f"\nLayerName: {layername}:\n "
+#                     f"\tThickness: {layer.thickness},\n"
+#                     f"\tThickness_tolerance: {layer.thickness_tolerance}, \n"
+#                     f"\tMaterial: {layer.material}, \n"
+#                     # f"\tinfo: {layer.info}, \n"
+#                     f"\tZmin: {layer.zmin}, \n"
+#                     f"\tDerivedLayer: {layer.derived_layer}\n"
+#                 )
+#                 # 修改 info 的存储方式
+#                 if layername != "substrate" and layer.info:
+#                     file.write("\tInfo:\n")
+#                     for key, value in layer.info.items():
+#                         file.write(f"\t\t{key}: {value}\n")  # 每个 info 参数换行
+#
+#     print(f"TXT文件已保存至: {output_file2}")
+#
