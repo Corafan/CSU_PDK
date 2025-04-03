@@ -194,73 +194,100 @@ def save_gds(component):
     print(f"GDS 文件已保存至: {output_gds_path}")
 
 ###########打印层栈信息##########
-def export_layer_stacks(
-        layer_stacks: Dict[str, Any],
-        output_dir: str = None,
-        combined_filename: str = None
-):
-    """统一导出入口（增加路径询问）"""
-    # 默认输出路径
-    default_dir = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter"
+def export_layer_stacks(material: str, layer_stacks: Dict[str, Any], output_dir: str, export_mode: str = "separate",
+                        combined_filename: str = None):
+    """导出层栈数据到文件
 
-    # 询问是否修改路径
-    path_choice = input(f"使用默认保存路径({default_dir})? [Y/N]: ").strip().upper()
-    if path_choice in('N',"n"):
-        new_dir = input("请输入新保存路径: ").strip()
-        output_dir = new_dir if new_dir else default_dir
-    else:
-        output_dir = default_dir
+    Args:
+        material: 材料名称
+        layer_stacks: 层栈字典 {百分比: 层栈对象}
+        output_dir: 输出目录路径
+        export_mode: 导出模式 ("separate"或"combined")
+        combined_filename: 合并文件名(仅当export_mode="combined"时使用)
+    """
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+    except Exception as e:
+        print(f"无法创建目录 {output_dir}: {str(e)}")
+        return
 
-    # 确保路径存在
-    os.makedirs(output_dir, exist_ok=True)
-
-    if len(layer_stacks) == 1:
-        percent, stack = next(iter(layer_stacks.items()))
-        _export_single_stack(percent, stack, output_dir)
-    else:
+    if export_mode == "separate":
+        # 只导出单独文件
+        success_count = 0
+        for percent_str, stack in layer_stacks.items():
+            if _export_single_stack(material, percent_str, stack, output_dir):
+                success_count += 1
+        print(f"\n✓ 成功导出 {success_count}/{len(layer_stacks)} 个单独文件")
+    elif export_mode == "combined":
+        # 只导出合并文件
         if combined_filename is None:
-            combined_filename = "CSU_LayerStack.txt"
+            combined_filename = f"{material}_Combined_LayerStacks.txt"
+        _export_combined_stacks(material, layer_stacks, output_dir, combined_filename)
 
-        # 询问合并文件名
-        file_choice = input(f"使用默认合并文件名({combined_filename})? [Y/n]: ").strip().upper()
-        if file_choice in('N',"n"):
-            new_name = input("请输入新文件名(不含路径): ").strip()
-            if new_name:
-                combined_filename = new_name
 
-        _export_multiple_stacks(layer_stacks, output_dir, combined_filename)
-
-def _export_single_stack(percent_str: str, stack: Any, output_dir: str):
-    """导出单个层栈"""
-    filename = f"LayerStack_{percent_str.replace('%', 'percent')}.txt"
+def _export_single_stack(material: str, percent_str: str, stack: Any, output_dir: str):
+    """导出单个层栈到单独文件"""
+    # 生成标准化文件名
+    filename = f"{material}_LayerStack_{percent_str.replace('%', 'percent')}.txt"
     path = os.path.join(output_dir, filename)
 
-    with open(path, "w", encoding="utf-8") as f:
-        _write_stack_content(f, percent_str, stack)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            _write_stack_content(material, f, percent_str, stack)
 
-    print(f"TXT文件已保存至: {path}(有需要可自行修改参数)")
-    return path
+        print(f"✓ 成功保存: {path}")
+        return path
+    except Exception as e:
+        print(f"× 导出失败: {str(e)}")
+        return None
 
 
-def _export_multiple_stacks(layer_stacks: Dict[str, Any], output_dir: str, combined_filename: str):
-    """导出多个层栈"""
+def _export_multiple_stacks(material: str, layer_stacks: Dict[str, Any], output_dir: str, combined_filename: str,
+                            is_combined_export: bool = False):
+    """导出多个层栈到合并文件和单独文件"""
+    combined_path = os.path.join(output_dir, combined_filename)
+    success_count = 0
+
+    try:
+        with open(combined_path, "w", encoding="utf-8") as combined_file:
+            combined_file.write(f"===== Material: {material} =====\n\n")
+            print(f"\n正在合并 {len(layer_stacks)} 个层栈到: {combined_filename}")
+
+            for percent_str, stack in layer_stacks.items():
+                _write_stack_content(material, combined_file, percent_str, stack)
+                # 如果不是合并导出模式，才导出单个文件
+                if not is_combined_export:
+                    if _export_single_stack(material, percent_str, stack, output_dir):
+                        success_count += 1
+
+        print(f"\n✓ 合并完成: {combined_path}")
+        if not is_combined_export:
+            print(f"✓ 成功导出 {success_count}/{len(layer_stacks)} 个单独文件")
+    except Exception as e:
+        print(f"× 合并文件导出失败: {str(e)}")
+
+
+def _export_combined_stacks(material: str, layer_stacks: Dict[str, Any], output_dir: str, combined_filename: str):
+    """导出多个层栈到合并文件"""
     combined_path = os.path.join(output_dir, combined_filename)
 
-    with open(combined_path, "w", encoding="utf-8") as combined_file:
-        print("将CSU_LayerStack中的主要参数，保存至下方文件内")
+    try:
+        with open(combined_path, "w", encoding="utf-8") as combined_file:
+            combined_file.write(f"===== Material: {material} =====\n\n")
+            print(f"\n正在合并 {len(layer_stacks)} 个层栈到: {combined_filename}")
 
-        for percent_str, stack in layer_stacks.items():
-            # 写入合并文件
-            _write_stack_content(combined_file, percent_str, stack)
-            # 生成单独文件
-            _export_single_stack(percent_str, stack, output_dir)
+            for percent_str, stack in layer_stacks.items():
+                _write_stack_content(material, combined_file, percent_str, stack)
 
-    print(f"\n合并文件已保存至: {combined_path}(有需要可自行修改参数)")
+        print(f"\n✓ 合并完成: {combined_path}")
+    except Exception as e:
+        print(f"× 合并文件导出失败: {str(e)}")
 
 
-def _write_stack_content(file_obj, percent_str: str, stack: Any):
+def _write_stack_content(material: str, file_obj, percent_str: str, stack: Any):
     """将层栈内容写入文件对象"""
-    file_obj.write(f"\n===== {percent_str} =====\n")
+    # 写入标题和基本信息
+    file_obj.write(f"\n===== {material} - {percent_str} =====\n")
     file_obj.write(f"Design Rules for {percent_str} Delta N index (um)\n")
     file_obj.write("\t\tParameter\n")
 
@@ -268,19 +295,21 @@ def _write_stack_content(file_obj, percent_str: str, stack: Any):
     if hasattr(stack, 'layers') and 'substrate' in stack.layers:
         substrate = stack.layers['substrate']
         if hasattr(substrate, 'info'):
+            file_obj.write("Substrate Properties:\n")
             for k, v in substrate.info.items():
-                file_obj.write(f"{k}: {v}\n")
+                file_obj.write(f"\t{k}: {v}\n")
 
     # 写入各层信息
     for layer_name, layer in stack.layers.items():
 
-        file_obj.write(f"\nLayerName: {layer_name}:\n")
-        file_obj.write(f"\tThickness: {layer.thickness},\n")
-        file_obj.write(f"\tThickness_tolerance: {layer.thickness_tolerance},\n")
-        file_obj.write(f"\tMaterial: {layer.material},\n")
-        file_obj.write(f"\tZmin: {layer.zmin},\n")
-        file_obj.write(f"\tDerivedLayer: {layer.derived_layer}\n")
+        file_obj.write(f"\nLayer: {layer_name}\n")
+        file_obj.write(f"\tThickness: {getattr(layer, 'thickness', 'N/A')}\n")
+        file_obj.write(f"\tThickness_tolerance: {getattr(layer, 'thickness_tolerance', 'N/A')}\n")
+        file_obj.write(f"\tMaterial: {getattr(layer, 'material', 'N/A')}\n")
+        file_obj.write(f"\tZmin: {getattr(layer, 'zmin', 'N/A')}\n")
+        file_obj.write(f"\tDerivedLayer: {getattr(layer, 'derived_layer', 'N/A')}\n")
 
+        # 写入额外信息
         if layer_name != "substrate" and getattr(layer, 'info', None):
             file_obj.write("\tInfo:\n")
             for key, value in layer.info.items():
@@ -367,12 +396,10 @@ def run():
             elif choice in ("L", "l"):  # 导出层栈
                 try:
                     from csufactory.components.generate_Para.component_layer_stack import (
-                        Si_zp45_LayerStack,
-                        Si_zp75_LayerStack,
-                        Si_150_LayerStack,
-                        Quartz_zp45_LayerStack,
-                        Quartz_zp75_LayerStack,
+                        Si_zp45_LayerStack, Si_zp75_LayerStack, Si_150_LayerStack,
+                        Quartz_zp45_LayerStack, Quartz_zp75_LayerStack
                     )
+
                     # 按材料分类的层栈字典
                     material_stacks = {
                         "Si": {
@@ -385,66 +412,132 @@ def run():
                             "0.75%": Quartz_zp75_LayerStack
                         }
                     }
-                    # 第一步：选择材料类型
-                    print("\n请选择材料类型:")
-                    materials = list(material_stacks.keys())
-                    for i, material in enumerate(materials, 1):
-                        print(f"{i}. {material}")
 
-                    material_choice = input("输入材料编号: ").strip()
+                    # 第一步：选择材料范围
+                    print("\n请选择要导出的材料:")
+                    print("1. Si")
+                    print("2. Quartz")
+                    print("3. 全部材料")
+                    material_choice = input("请输入选择(1-3): ").strip()
 
-                    if not material_choice.isdigit() or not (0 < int(material_choice) <= len(materials)):
+                    # 获取输出目录（所有导出模式共用）
+                    default_dir = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter"
+                    path_choice = input(f"使用默认保存路径({default_dir})? [Y/N]: ").strip().upper()
+                    output_dir = default_dir if path_choice != "N" else input("请输入新保存路径: ").strip()
+
+                    # 第二步：根据选择确定要导出的层栈
+                    if material_choice == "1":
+                        selected_material = "Si"
+                        stacks_to_export = material_stacks["Si"]
+                    elif material_choice == "2":
+                        selected_material = "Quartz"
+                        stacks_to_export = material_stacks["Quartz"]
+                    elif material_choice == "3":
+                        selected_material = "All"
+                        # 合并所有材料的层栈
+                        stacks_to_export = {}
+                        for mat, stacks in material_stacks.items():
+                            stacks_to_export.update({f"{mat}_{k}": v for k, v in stacks.items()})
+                    else:
                         print("无效选择")
                         continue
 
-                    selected_material = materials[int(material_choice) - 1]
-                    available_stacks = material_stacks[selected_material]
-                    # 第二步：选择导出模
-                    print(f"\n[{selected_material}] 导出选项:")
-                    print("1. 导出当前材料的单个层栈")
-                    print("2. 导出当前材料全部分开文件")
-                    print("3. 导出当前材料合并文件")
-                    print("4. 导出所有材料全部分开文件")
-                    print("5. 导出所有材料合并文件")
+                    # 第三步：选择导出模式
+                    if material_choice in ("1", "2"):  # 单个材料
+                        print(f"\n[{selected_material}] 导出选项:")
+                        print("1. 导出单个层栈")
+                        print("2. 导出全部分开文件")
+                        print("3. 导出合并文件")
 
-                    mode = input("请选择导出模式(1-5): ").strip()
-                    # 处理导出逻辑
-                    if mode == "1":
-                        print(f"\n[{selected_material}] 可选层栈:")
-                        percents = list(available_stacks.keys())
-                        for i, percent in enumerate(percents, 1):
-                            print(f"{i}. {percent}")
+                        mode = input("请选择导出模式(1-3): ").strip()
 
-                        percent_choice = input("选择要导出的层栈(数字): ").strip()
-                        if percent_choice.isdigit() and 0 < int(percent_choice) <= len(percents):
-                            selected_percent = percents[int(percent_choice) - 1]
-                            export_layer_stacks({selected_percent: available_stacks[selected_percent]})
+                        if mode == "1":
+                            print(f"\n[{selected_material}] 可选层栈:")
+                            percents = list(stacks_to_export.keys())
+                            for i, percent in enumerate(percents, 1):
+                                print(f"{i}. {percent}")
+
+                            percent_choice = input("选择要导出的层栈(数字): ").strip()
+                            if percent_choice.isdigit() and 0 < int(percent_choice) <= len(percents):
+                                selected_percent = percents[int(percent_choice) - 1]
+                                export_layer_stacks(
+                                    material=selected_material,
+                                    layer_stacks={selected_percent: stacks_to_export[selected_percent]},
+                                    output_dir=output_dir,
+                                    export_mode="separate"
+                                )
+                            else:
+                                print("无效选择")
+
+                        elif mode == "2":
+                            export_layer_stacks(
+                                material=selected_material,
+                                layer_stacks=stacks_to_export,
+                                output_dir=output_dir,
+                                export_mode="separate"
+                            )
+
+                        elif mode == "3":
+                            default_name = f"{selected_material}_Combined.txt"
+                            file_choice = input(f"请输入文件名（默认合并文件名为{default_name}) [Y/enter表示默认]: ").strip().upper()
+                            if file_choice in ("Y", "y", ""):
+                                file_name = default_name
+                            else:
+                                file_name = file_choice+ ".txt"
+
+
+                            export_layer_stacks(
+                                material=selected_material,
+                                layer_stacks=stacks_to_export,
+                                output_dir=output_dir,
+                                export_mode="combined",
+                                combined_filename=file_name
+                            )
+
                         else:
                             print("无效选择")
+#############################这里可以用_export_multiple_stacks这个函数来做一个新功能，打印单个材料合并和分开的。
+                    elif material_choice == "3":  # 全部材料
+                        print("\n[全部材料] 导出选项:")
+                        print("1. 导出全部分开文件")
+                        print("2. 导出合并文件")
 
-                    elif mode == "2":
-                        export_layer_stacks(available_stacks)
+                        mode = input("请选择导出模式(1-2): ").strip()
 
-                    elif mode == "3":
-                        export_layer_stacks(available_stacks,
-                                            combined_filename=f"{selected_material}_Combined.txt")
+                        if mode == "1":
+                            # 导出全部分开文件（不生成合并文件）
+                            for mat, stacks in material_stacks.items():
+                                print(f"\n正在导出 {mat} 的层栈文件...")
+                                export_layer_stacks(
+                                    material=mat,
+                                    layer_stacks=stacks,
+                                    output_dir=output_dir,
+                                    export_mode="separate"
+                                )
+                        elif mode == "2":
+                            # 导出合并文件
+                            all_stacks = {}
+                            for mat, stacks in material_stacks.items():
+                                all_stacks.update({f"{mat}_{k}": v for k, v in stacks.items()})
 
-                    elif mode == "4":
-                        # 导出所有材料的所有层栈（分开文件）
-                        for material, stacks in material_stacks.items():
-                            print(f"\n正在导出 {material} 层栈...")
-                            export_layer_stacks(stacks)
+                            # 询问合并文件名
+                            default_name = "ALL_Materials_Combined.txt"
+                            file_choice = input(f"请输入文件名（默认合并文件名为{default_name}) [Y/enter表示默认]: ").strip().upper()
+                            if file_choice in ("Y", "y", ""):
+                                file_name = default_name
+                            else:
+                                file_name = file_choice + ".txt"
 
-                    elif mode == "5":
-                        # 导出所有材料的合并文件
-                        all_stacks = {}
-                        for stacks in material_stacks.values():
-                            all_stacks.update(stacks)
-                        export_layer_stacks(all_stacks,
-                                            combined_filename="All_Materials_Combined.txt")
-
-                    else:
-                        print("无效选择")
+                            print("\n正在导出合并文件...")
+                            export_layer_stacks(
+                                material="All_Materials",
+                                layer_stacks=all_stacks,
+                                output_dir=output_dir,
+                                export_mode="combined",
+                                combined_filename=file_name
+                            )
+                        else:
+                            print("无效选择")
 
                 except ImportError as e:
                     print(f"无法导入层栈: {str(e)}")
@@ -452,7 +545,6 @@ def run():
                     print(f"发生错误: {str(e)}")
 
                 continue  # 返回操作菜单
-
         # 根据用户选择决定下一步流程
         if choice in ("R", "r"):
             continue  # 直接继续主循环，重新选择组件
@@ -468,7 +560,8 @@ def run():
 #增加“返回上一步”的选项（√）
 #增加”返回指定一步“的选项（√）
 #增加输入参数时”返回上一步“的选项（√）
-#是否需要打印layer_stack?（√）是否有参数需要修改？（好像有点复杂，不如直接去文件中修改）
+#是否需要打印layer_stack?（√）
+#layer_stack是否有参数需要修改？（好像有点复杂，不如直接去文件中修改）
 
 #是否需要打印3d的？
 #考虑和csupdk.py那部分结合(打印端口)
@@ -578,6 +671,326 @@ if __name__ == "__main__":
 #         else:
 #             param_values[param.name] = default_value         # 如果用户没有输入任何内容，使用默认值
 #     return selected_component_name, param_values             # 返回组件名称和参数字典
+
+# def export_layer_stacks(material: str, layer_stacks: Dict[str, Any], combined_filename: str = None):
+#     # 路径询问保持原有实现
+#     default_dir = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter"
+#     path_choice = input(f"使用默认保存路径({default_dir})? [Y/N]: ").strip().upper()
+#     output_dir = default_dir if path_choice != "N" else input("请输入新保存路径: ").strip()
+#     os.makedirs(output_dir, exist_ok=True)
+#
+#     # 确保路径存在
+#     os.makedirs(output_dir, exist_ok=True)
+#
+#     if len(layer_stacks) == 1:
+#         percent, stack = next(iter(layer_stacks.items()))
+#         _export_single_stack(material, percent, stack, output_dir)
+#     else:
+#         if combined_filename is None:
+#             combined_filename = f"{material}_Combined.txt"  # 自动添加材料前缀
+#         # 询问合并文件名
+#         file_choice = input(f"使用默认合并文件名({combined_filename})? [Y/n]: ").strip().upper()
+#         if file_choice in('N',"n"):
+#             new_name = input("请输入新文件名(不含路径): ").strip()
+#             if new_name:
+#                 combined_filename = new_name
+#
+#         _export_multiple_stacks(material, layer_stacks, output_dir, combined_filename)
+#
+# def _export_single_stack(material: str, percent_str: str, stack: Any, output_dir: str):
+#     """导出单个层栈（添加材料前缀）"""
+#     filename = f"{material}_LayerStack_{percent_str.replace('%', 'percent')}.txt"
+#     path = os.path.join(output_dir, filename)
+#
+#     with open(path, "w", encoding="utf-8") as f:
+#         # 在文件头添加材料信息
+#         _write_stack_content(material,f, percent_str, stack)
+#
+#     print(f"TXT文件已保存至: {path}--(有需要可自行修改参数)")
+#     return path
+#
+#
+# def _export_multiple_stacks(material: str, layer_stacks: Dict[str, Any], output_dir: str, combined_filename: str):
+#     """导出多个层栈（添加材料信息）"""
+#     combined_path = os.path.join(output_dir, combined_filename)
+#
+#     with open(combined_path, "w", encoding="utf-8") as combined_file:
+#         combined_file.write(f"===== Material: {material} =====\n\n")  # 添加材料标题
+#         print(f"将合并LayerStack中的主要参数保存至下方文件内：")
+#
+#         for percent_str, stack in layer_stacks.items():
+#             _write_stack_content(material,combined_file, percent_str, stack)
+#             _export_single_stack(material, percent_str, stack, output_dir)
+#
+#     print(f"\n合并文件已保存至: {combined_path}(有需要可自行修改参数)")
+#
+#
+# def _write_stack_content(material: str,file_obj, percent_str: str, stack: Any):
+#     """将层栈内容写入文件对象"""
+#     file_obj.write(f"\n====={material}-{percent_str} =====\n")
+#     file_obj.write(f"Design Rules for {percent_str} Delta N index (um)\n")
+#     file_obj.write("\t\tParameter\n")
+#
+#     # 写入基底信息
+#     if hasattr(stack, 'layers') and 'substrate' in stack.layers:
+#         substrate = stack.layers['substrate']
+#         if hasattr(substrate, 'info'):
+#             for k, v in substrate.info.items():
+#                 file_obj.write(f"{k}: {v}\n")
+#
+#     # 写入各层信息
+#     for layer_name, layer in stack.layers.items():
+#
+#         file_obj.write(f"\nLayerName: {layer_name}:\n")
+#         file_obj.write(f"\tThickness: {layer.thickness},\n")
+#         file_obj.write(f"\tThickness_tolerance: {layer.thickness_tolerance},\n")
+#         file_obj.write(f"\tMaterial: {layer.material},\n")
+#         file_obj.write(f"\tZmin: {layer.zmin},\n")
+#         file_obj.write(f"\tDerivedLayer: {layer.derived_layer}\n")
+#
+#         if layer_name != "substrate" and getattr(layer, 'info', None):
+#             file_obj.write("\tInfo:\n")
+#             for key, value in layer.info.items():
+#                 file_obj.write(f"\t\t{key}: {value}\n")
+
+# elif choice in ("L", "l"):  # 导出层栈
+#     try:
+#         from csufactory.components.generate_Para.component_layer_stack import (
+#             Si_zp45_LayerStack, Si_zp75_LayerStack, Si_150_LayerStack,
+#             Quartz_zp45_LayerStack, Quartz_zp75_LayerStack
+#         )
+#
+#         # 按材料分类的层栈字典
+#         material_stacks = {
+#             "Si": {
+#                 "0.45%": Si_zp45_LayerStack,
+#                 "0.75%": Si_zp75_LayerStack,
+#                 "1.5%": Si_150_LayerStack
+#             },
+#             "Quartz": {
+#                 "0.45%": Quartz_zp45_LayerStack,
+#                 "0.75%": Quartz_zp75_LayerStack
+#             }
+#         }
+#
+#         # 第一步：选择材料范围
+#         print("\n请选择要导出的材料:")
+#         print("1. Si")
+#         print("2. Quartz")
+#         print("3. 全部材料")
+#         material_choice = input("请输入选择(1-3): ").strip()
+#
+#         # 第二步：根据选择确定要导出的层栈
+#         if material_choice == "1":
+#             selected_material = "Si"
+#             stacks_to_export = material_stacks["Si"]
+#         elif material_choice == "2":
+#             selected_material = "Quartz"
+#             stacks_to_export = material_stacks["Quartz"]
+#         elif material_choice == "3":
+#             selected_material = "All"
+#             # 合并所有材料的层栈
+#             stacks_to_export = {}
+#             for mat, stacks in material_stacks.items():
+#                 stacks_to_export.update({f"{mat}_{k}": v for k, v in stacks.items()})
+#         else:
+#             print("无效选择")
+#             continue
+#
+#         # 第三步：选择导出模式
+#         if material_choice in ("1", "2"):  # 单个材料
+#             print(f"\n[{selected_material}] 导出选项:")
+#             print("1. 导出单个层栈")
+#             print("2. 导出全部分开文件")
+#             print("3. 导出合并文件")
+#
+#             mode = input("请选择导出模式(1-3): ").strip()
+#
+#             if mode == "1":
+#                 print(f"\n[{selected_material}] 可选层栈:")
+#                 percents = list(stacks_to_export.keys())
+#                 for i, percent in enumerate(percents, 1):
+#                     print(f"{i}. {percent}")
+#
+#                 percent_choice = input("选择要导出的层栈(数字): ").strip()
+#                 if percent_choice.isdigit() and 0 < int(percent_choice) <= len(percents):
+#                     selected_percent = percents[int(percent_choice) - 1]
+#                     export_layer_stacks(
+#                         material=selected_material,
+#                         layer_stacks={selected_percent: stacks_to_export[selected_percent]}
+#                     )
+#                 else:
+#                     print("无效选择")
+#
+#             elif mode == "2":
+#                 export_layer_stacks(
+#                     material=selected_material,
+#                     layer_stacks=stacks_to_export
+#                 )
+#
+#             elif mode == "3":
+#                 export_layer_stacks(
+#                     material=selected_material,
+#                     layer_stacks=stacks_to_export,
+#                     combined_filename=f"{selected_material}_Combined.txt"
+#                 )
+#
+#             else:
+#                 print("无效选择")
+#
+#
+#         # 修改运行部分中的导出逻辑
+#
+#         elif material_choice == "3":  # 全部材料
+#
+#             print("\n[全部材料] 导出选项:")
+#             print("1. 导出全部分开文件")
+#             print("2. 导出合并文件")
+#             mode = input("请选择导出模式(1-2): ").strip()
+#             # 获取输出目录（只需要询问一次）
+#             default_dir = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter"
+#             path_choice = input(f"使用默认保存路径({default_dir})? [Y/N]: ").strip().upper()
+#             output_dir = default_dir if path_choice != "N" else input("请输入新保存路径: ").strip()
+#             if mode == "1":
+#                 # 导出全部分开文件（不生成合并文件）
+#                 for mat, stacks in material_stacks.items():
+#                     print(f"\n正在导出 {mat} 的层栈文件...")
+#                     export_layer_stacks(
+#                         material=mat,
+#                         layer_stacks=stacks,
+#                         output_dir=output_dir,
+#                         export_mode="separate"
+#                     )
+#
+#             elif mode == "2":
+#                 # 导出合并文件
+#                 all_stacks = {}
+#                 for mat, stacks in material_stacks.items():
+#                     all_stacks.update({f"{mat}_{k}": v for k, v in stacks.items()})
+#                 # 询问合并文件名
+#                 default_name = "ALL_Materials_Combined.txt"
+#                 file_choice = input(f"使用默认合并文件名({default_name})? [Y/n]: ").strip().upper()
+#                 if file_choice == "N":
+#                     default_name = input("请输入新文件名(不含路径和扩展名): ").strip() + ".txt"
+#                 print("\n正在导出合并文件...")
+#
+#                 export_layer_stacks(
+#                     material="All_Materials",
+#                     layer_stacks=all_stacks,
+#                     output_dir=output_dir,
+#                     export_mode="combined",
+#                     combined_filename=default_name
+#                 )
+#             else:
+#                 print("无效选择")
+#
+#     except ImportError as e:
+#         print(f"无法导入层栈: {str(e)}")
+#     except Exception as e:
+#         print(f"发生错误: {str(e)}")
+#
+#     continue  # 返回操作菜单
+
+# elif choice in ("L", "l"):  # 导出层栈
+#     try:
+#         from csufactory.components.generate_Para.component_layer_stack import (
+#             Si_zp45_LayerStack,
+#             Si_zp75_LayerStack,
+#             Si_150_LayerStack,
+#             Quartz_zp45_LayerStack,
+#             Quartz_zp75_LayerStack,
+#         )
+#         # 按材料分类的层栈字典
+#         material_stacks = {
+#             "Si": {
+#                 "0.45%": Si_zp45_LayerStack,
+#                 "0.75%": Si_zp75_LayerStack,
+#                 "1.5%": Si_150_LayerStack
+#             },
+#             "Quartz": {
+#                 "0.45%": Quartz_zp45_LayerStack,
+#                 "0.75%": Quartz_zp75_LayerStack
+#             }
+#         }
+#         # 第一步：选择材料类型
+#         print("\n请选择材料类型:")
+#         materials = list(material_stacks.keys())
+#         for i, material in enumerate(materials, 1):
+#             print(f"{i}. {material}")
+#
+#         material_choice = input("输入材料编号: ").strip()
+#
+#         if not material_choice.isdigit() or not (0 < int(material_choice) <= len(materials)):
+#             print("无效选择")
+#             continue
+#
+#         selected_material = materials[int(material_choice) - 1]
+#         available_stacks = material_stacks[selected_material]
+#         # 第二步：选择导出模
+#         print(f"\n[{selected_material}] 导出选项:")
+#         print("1. 导出当前材料的单个层栈")
+#         print("2. 导出当前材料全部分开文件")
+#         print("3. 导出当前材料合并文件")
+#         # print("4. 导出所有材料全部分开文件")
+#         # print("5. 导出所有材料合并文件")
+#
+#         mode = input("请选择导出模式(1-5): ").strip()
+#
+#         # 第三步：执行导出（路径询问在export_layer_stacks内部处理）
+#         if mode == "1":
+#             print(f"\n[{selected_material}] 可选层栈:")
+#             percents = list(available_stacks.keys())
+#             for i, percent in enumerate(percents, 1):
+#                 print(f"{i}. {percent}")
+#
+#             percent_choice = input("选择要导出的层栈(数字): ").strip()
+#             if percent_choice.isdigit() and 0 < int(percent_choice) <= len(percents):
+#                 selected_percent = percents[int(percent_choice) - 1]
+#                 export_layer_stacks(
+#                     material=selected_material,
+#                     layer_stacks={selected_percent: available_stacks[selected_percent]}
+#                 )
+#             else:
+#                 print("无效选择")
+#
+#         elif mode == "2":
+#             export_layer_stacks(
+#                 material=selected_material,
+#                 layer_stacks=available_stacks
+#             )
+#
+#         elif mode == "3":
+#             export_layer_stacks(
+#                 material=selected_material,
+#                 layer_stacks=available_stacks,
+#                 combined_filename=f"{selected_material}_Combined.txt"
+#             )
+#
+#         # elif mode == "4":
+#         #     for mat, stacks in material_stacks.items():
+#         #         export_layer_stacks(
+#         #             material=mat,
+#         #             layer_stacks=stacks
+#         #         )
+#         #
+#         # elif mode == "5":
+#         #     all_stacks = {}
+#         #     for mat, stacks in material_stacks.items():
+#         #         all_stacks.update({f"{mat}_{k}": v for k, v in stacks.items()})
+#         #
+#         #     export_layer_stacks(
+#         #         material="All_Materials",
+#         #         layer_stacks=all_stacks,
+#         #         combined_filename="ALL_Materials_Combined.txt"
+#         #     )
+#
+#         else:
+#             print("无效选择")
+#
+#     except ImportError as e:
+#         print(f"无法导入层栈: {str(e)}")
+#
+#     continue  # 返回操作菜单
 
 # #帮我优化一下这个循环，我想要有像你一样的（重新选择组件、修改参数、退出和保存等）
 # 这个有点不对，

@@ -195,7 +195,7 @@ Quartz_zp45_LayerStack= LayerStack(
             layer=layer_Si_Sub,
             thickness=Para.thickness_substrate_Quartz,
             zmin=-Para.thickness_substrate_Quartz-Para.thickness_bottom_clad,
-            material="silicon",
+            material="Quartz",
             mesh_order=101,
             info={
                 "wafer_diameter": Para.wafer_diameter,
@@ -447,7 +447,7 @@ Quartz_zp75_LayerStack= LayerStack(
             layer=layer_Si_Sub,
             thickness=Para.thickness_substrate_Quartz,
             zmin=-Para.thickness_substrate_Quartz-Para.thickness_bottom_clad,
-            material="silicon",
+            material="Quartz",
             mesh_order=101,
             info={
                 "wafer_diameter": Para.wafer_diameter,
