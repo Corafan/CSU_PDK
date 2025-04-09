@@ -13,23 +13,18 @@ def Sbend(
     dx: Delta = 10.0,
     cross_section: CrossSectionSpec = "strip",
 ) -> Component:
-    r"""generate an s_bends.
-
+    r"""生成s型弯曲波导
     Args:
-        width: width of bend.
-        dy: port to port vertical spacing.
-        dx: bend length in x direction.
-        cross_section: section.
-
+        width:弯曲波导的宽度。
+        dy:波导到波导y方向上的距离。
+        dx:弯曲波导x方向上的长度。
+        cross_section:横截面类型，一般无需修改。
     .. code::
-
-                       dx
-                    |-----|
-                       ___ o3
+                    dx
+               |----------|
+                       ___ o3 (width)
                       /       |
              o2 _____/        |dy
-
-
     """
     c = Component()
     x = gf.get_cross_section(cross_section,width=width)

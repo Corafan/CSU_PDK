@@ -1,5 +1,3 @@
-
-===== 1.5% =====
 Design Rules for 1.5% Delta N index (um)
 		Parameter
 wafer_diameter: 150000

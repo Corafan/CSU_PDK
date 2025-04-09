@@ -11,8 +11,9 @@ def grating(
     cross_section: ComponentSpec = "strip",
 ) -> Component:
     """生成一个光栅（grating）。
-
     Args:
+        width:光栅宽度（y方向长度）。
+        length:光栅长度（x方向的长度）。
         num_wg: 波导的数量。
         layer:层类型。
     """

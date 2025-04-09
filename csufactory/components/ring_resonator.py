@@ -14,23 +14,21 @@ def ring_resonator(
     layer: LayerSpec = "WG",
     cross_section: ComponentSpec = "strip",
 ) -> Component:
-    r"""Coupler for ring.
-
+    r"""生成环形谐振器
     Args:
-        gap: spacing between ring and straight waveguides.
-        radius: of the outside circle.
-        width: width of the ring and straight waveguides.
-        layer:layer spec.
-
+        gap: 环形和直波导之间的间隙。
+        radius: 环形外环的半径。
+        width: 直波导（y方向）和环形的宽度。
+        layer:层类型（层号，层类型）,可以改变环形的层类型,一般无需修改。
+        cross_section:横截面类型，一般无需修改。
     .. code::
              ------------
             /           \
            |             |
             \           /
              \         /
-           ---=========---
+           ---=========--- gap
         o1    length_x   o2
-
     """
     c = gf.Component()
     width_wg = width

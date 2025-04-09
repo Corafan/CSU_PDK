@@ -18,15 +18,14 @@ def mmi(
 ) -> Component:
     r"""
     Args:
-        inputs: the number of mmi inputs.(uniform)
-        outputs: the number of mmi outputs.(uniform)
-        width_wg: interface between inputs and outputs straights and mmi region(x).
-        length_wg: into the mmi region(y).
-        length_mmi: in x direction.
-        width_mmi: in y direction.
-        straight: straight function.
+        inputs:输入波导数量（分布均匀）。
+        outputs:输出波导数量（分布均匀）。
+        width_wg: 输入输出波导与mmi接触部分的长度，即输入输出波导x方向上的长度。
+        length_wg:输入输出波导y方向上的长度。
+        length_mmi:x方向上的长度。
+        width_mmi:y方向上的长度。
+        cross_section:横截面类型，一般无需修改。
     .. code::
-
                    length_mmi
                     <------>
                     ________
@@ -47,10 +46,6 @@ def mmi(
                   |           __  I_out2
                   |          /
                   | ________|
-
-
-                 <->
-            length_taper
     """
     c = gf.Component()
 

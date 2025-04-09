@@ -1,0 +1,90 @@
+
+===== Si - 0.75% =====
+Design Rules for 0.75% Delta N index (um)
+		Parameter
+Substrate Properties:
+	wafer_diameter: 150000
+	PDL: 0.3
+	Min_line_width: 1.5
+	Min_spacing: 1.5
+	CD_bias: 0.4
+	CD_bias_tolerance: 0.1
+	Min_bend_radius: 12
+
+Layer: substrate
+	Thickness: 625.0
+	Thickness_tolerance: None
+	Material: silicon
+	Zmin: -640.0
+	DerivedLayer: None
+
+Layer: box
+	Thickness: 15.0
+	Thickness_tolerance: None
+	Material: silicon
+	Zmin: -15.0
+	DerivedLayer: None
+	Info:
+		refractive_index: 1.444
+
+Layer: core
+	Thickness: 6.0
+	Thickness_tolerance: 0.5
+	Material: silicon
+	Zmin: 0.0
+	DerivedLayer: WG
+	Info:
+		core_etch: 7.0
+		core_etch_tolerance: -0.5
+		refractive_index: 1.4
+		uniformity_of_index: 0.0002
+		uniformity_of_thickness: 0.15
+		color: blue
+		simulation_settings: {'wavelength': 1.55, 'solver': 'FDTD'}
+
+Layer: top_clad
+	Thickness: 26.0
+	Thickness_tolerance: 2.0
+	Material: sio2
+	Zmin: 0.0
+	DerivedLayer: None
+	Info:
+		refractive_index: 1.444
+		color: blue
+		uniformity_of_index: 0.0002
+		uniformity_of_thickness: 1.5
+
+Layer: TiN
+	Thickness: 0.2
+	Thickness_tolerance: None
+	Material: TiN
+	Zmin: 26.0
+	DerivedLayer: Metal_TiN
+
+Layer: heater_clad
+	Thickness: 2.2
+	Thickness_tolerance: None
+	Material: sio2
+	Zmin: 26.0
+	DerivedLayer: SiO_Oxide_1
+
+Layer: Ti
+	Thickness: 3.4
+	Thickness_tolerance: None
+	Material: Titanium
+	Zmin: 26.2
+	DerivedLayer: None
+
+Layer: Al
+	Thickness: 2.7
+	Thickness_tolerance: None
+	Material: Aluminum
+	Zmin: 27.599999999999998
+	DerivedLayer: Metal_Al
+
+Layer: SiN
+	Thickness: 1.0
+	Thickness_tolerance: None
+	Material: SiN
+	Zmin: 29.599999999999998
+	DerivedLayer: SiN

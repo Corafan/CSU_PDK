@@ -15,13 +15,12 @@ def crossing(
     port_type: str | None = None,
     cross_section: CrossSectionSpec = "strip",
 ) -> Component:
-    """Returns a cross from two rectangles of length and width.
-
+    """生成一个十字crossing.
     Args:
-        length: float, half of Length of the cross from one end to the other.(从中心正方形到端口的距离）
-        width: float, Width of the arms of the cross.
-        layer: layer for geometry.
-        port_type: None, optical, electrical.
+        length:从中心正方形到任意一个端口的距离。
+        width:十字crossing的宽度。
+        layer:层，（层号，层类型）
+        port_type: 电信号端口或光信号端口，electrical或optical.
         （ports按顺时针旋转，o1在左侧）
     """
     layer = gf.get_layer(layer)

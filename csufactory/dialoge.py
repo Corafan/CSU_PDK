@@ -1,10 +1,11 @@
 from __future__ import annotations
-import inspect
 import os
+import inspect
+import functools  # partial 用于处理函数参数
 import csufactory.components as components
 from typing import Dict, Any
-import gdsfactory as gf
 import datetime
+import gdsfactory as gf
 from functools import partial
 from gdsfactory.add_pins import add_pins_inside1nm
 from csufactory.generic_tech.layer_map import CSULAYER as LAYER
@@ -15,6 +16,35 @@ from csufactory.generic_tech.layer_map import CSULAYER as LAYER
 #     pin_length=0.5,
 #     layer=LAYER.PORT
 # )
+
+# def run_component_function(func_name: str, param_values: dict, add_ports: bool = True) -> gf.Component:
+#     """运行组件函数并添加端口层
+#
+#     返回:
+#         gf.Component: 成功返回组件对象，失败返回None
+#     """
+#     try:
+#         module = __import__(f"csufactory.components.{func_name}", fromlist=[func_name])
+#         component_func = getattr(module, func_name)
+#
+#         # 生成组件
+#         component = component_func(**param_values)
+#         if component is None:
+#             raise ValueError("组件函数返回了None")
+#
+#         # 自动添加端口层
+#         if add_ports:
+#             try:
+#                 component = _add_pins(component)
+#                 print(f"已添加端口层 ({LAYER.PORT})")
+#             except Exception as e:
+#                 print(f"警告: 添加端口层失败 - {str(e)}")
+#
+#         return component
+#
+#     except Exception as e:
+#         print(f"生成组件失败: {str(e)}")
+#         return None
 
 # 获取所有组件（排除 __init__.py）
 def list_components():
@@ -94,6 +124,35 @@ def input_component_params(selected_component_name, old_params=None):
         # print(f"已输入参数: {list(param_values.keys())}")
         # print(f"待输入参数: {[p.name for p in param_list[current_index + 1:]]}")
 
+        if isinstance(default_value, functools.partial):
+            func = default_value.func
+            func_params = inspect.signature(func).parameters
+            func_keywords = default_value.keywords
+
+            print(f"\n参数 `{param.name}`是一个函数,你可以自定义其参数：\n(默认值: {default_value})")
+            new_kwargs = {}
+            for key, val in func_keywords.items():
+                user_input = input(f"请输入 `{key}` (默认值: {val})：").strip()
+                if user_input:
+                    try:
+                        # 尝试转换类型为 int 或 float
+                        if isinstance(val, float):
+                            new_kwargs[key] = float(user_input)
+                        elif isinstance(val, int):
+                            new_kwargs[key] = int(user_input)
+                        else:
+                            new_kwargs[key] = user_input
+                    except ValueError:
+                        print(f"无法识别类型，使用默认值 {val}")
+                        new_kwargs[key] = val
+                else:
+                    new_kwargs[key] = val
+
+            # 构建新的 partial 函数
+            param_values[param.name] = functools.partial(func, **new_kwargs)
+            current_index += 1
+            continue
+
         # 获取用户输入
         user_input = input(f"请输入参数 `{param.name}` (默认值: {default_value}) : ").strip()
 
@@ -141,35 +200,6 @@ def run_component_function(func_name, param_values):
     component_func = getattr(module, func_name)
     component = component_func(**param_values)  # 使用用户输入的参数运行组件函数
     return component  # 返回生成的组件对象
-
-# def run_component_function(func_name: str, param_values: dict, add_ports: bool = True) -> gf.Component:
-#     """运行组件函数并添加端口层
-#
-#     返回:
-#         gf.Component: 成功返回组件对象，失败返回None
-#     """
-#     try:
-#         module = __import__(f"csufactory.components.{func_name}", fromlist=[func_name])
-#         component_func = getattr(module, func_name)
-#
-#         # 生成组件
-#         component = component_func(**param_values)
-#         if component is None:
-#             raise ValueError("组件函数返回了None")
-#
-#         # 自动添加端口层
-#         if add_ports:
-#             try:
-#                 component = _add_pins(component)
-#                 print(f"已添加端口层 ({LAYER.PORT})")
-#             except Exception as e:
-#                 print(f"警告: 添加端口层失败 - {str(e)}")
-#
-#         return component
-#
-#     except Exception as e:
-#         print(f"生成组件失败: {str(e)}")
-#         return None
 
 def save_gds(component):
     """保存组件到GDS文件"""
@@ -563,7 +593,8 @@ def run():
 #是否需要打印layer_stack?（√）
 #layer_stack是否有参数需要修改？（好像有点复杂，不如直接去文件中修改）
 
-#是否需要打印3d的？
+#先这样吧：
+#是否需要打印3d的？?
 #考虑和csupdk.py那部分结合(打印端口)
 
 

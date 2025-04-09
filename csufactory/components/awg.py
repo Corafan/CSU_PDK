@@ -7,6 +7,8 @@ import numpy as np
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import ComponentFactory, CrossSectionSpec
+from sympy.physics.units import length
+
 from csufactory.generic_tech.layer_map import CSULAYER as LAYER  #没用到，layer由crosssection决定的
 
 
@@ -23,18 +25,15 @@ def free_propagation_region(
     # layer: tuple = LAYER.WG,    #LAYER是由上面的crosssection决定的
 ) -> Component:
     r"""Free propagation region.
-
     Args:
-        width1: width of the input region.
-        width2: width of the output region.
-        length: length of the free propagation region.
-        wg_width: waveguide width.
-        inputs: number of inputs.
-        outputs: number of outputs.
-        cross_section: cross_section function.
-
+        width1: 输入区域的宽度.
+        width2: 输出区域的宽度.
+        length: 自由传播区的长度.
+        wg_width:波导宽度.
+        inputs:输入波导数量.
+        outputs:输出波导数量.
+        cross_section:横截面类型，其中包含层类型和层号.
     .. code::
-
                  length
                  <-->
                    /|
@@ -123,24 +122,36 @@ def awg(
     inputs: int = 3,                                      #输入端口数
     arms: int = 10,                                       #阵列波导数量
     outputs: int = 3,                                     #输出端口数
-    free_propagation_region_input_function: ComponentFactory = partial(free_propagation_region, inputs=1),
-    free_propagation_region_output_function: ComponentFactory = partial(
-    free_propagation_region, inputs=10, width1=10, width2=20.0),
+    free_propagation_region_input_function: ComponentFactory = partial(free_propagation_region, width1=2, width2=20.0,length=20,wg_width=0.5),
+    free_propagation_region_output_function: ComponentFactory = partial(free_propagation_region, width1=10, width2=20.0,length=20,wg_width=0.5),
     fpr_spacing: float = 50.0,                            #输入/输出FPR的间距
     arm_spacing: float = 1.0,                             #阵列波导间距
     cross_section: CrossSectionSpec = "strip",
-    # layer: tuple = LAYER.WG,
 ) -> Component:
-    """Returns a basic Arrayed Waveguide grating.
+    """生成阵列波导光栅.
     Args:
-        inputs: number of intputs.
-        arms: number of arms.
-        outputs: number of outputs.
-        free_propagation_region_input_function: for input.
-        free_propagation_region_output_function: for output.
-        fpr_spacing: x separation between input/output free propagation region.
-        arm_spacing: y separation between arms.
-        cross_section: cross_section function.
+        inputs:输入端口数量.
+        arms:阵列波导数量.
+        outputs:输出波导数量.
+        free_propagation_region_input_function:输入的星型耦合器尺寸.
+        free_propagation_region_output_function:输出的星型耦合器尺寸.
+        fpr_spacing:输入输出星型耦合器的阵列波导在x方向上的间距。
+        arm_spacing:阵列波导y方向上的高度差.
+        cross_section:横截面类型，其中包含层类型和层号.
+    函数Free propagation region:
+    Args:
+        width1: 输入区域的宽度.
+        width2: 输出区域的宽度.
+        length: 自由传播区的长度.
+        wg_width:波导宽度.
+    .. code::
+                 length
+                 <-->
+                   /|
+                  / |
+           width1|  | width2
+                  \ |
+                   \|
     """
     c = gf.Component()
     fpr_in = free_propagation_region_input_function(
@@ -201,13 +212,14 @@ def awg(
 if __name__ == "__main__":
     # c = free_propagation_region(inputs=4, outputs=4)
     c = awg(
-    inputs= 1,
-    arms= 9,                                   #阵列波导数量
-    outputs= 1,
-    free_propagation_region_input_function= partial(free_propagation_region, width1=2, width2=20.0),
-    free_propagation_region_output_function= partial(free_propagation_region, width1=2, width2=20.0),
-    fpr_spacing= 50,                            #输入/输出FPR的间距
-    arm_spacing= 1,                             #阵列波导间距
+        inputs=1,
+        arms=9,  # 阵列波导数量
+        outputs=1,
+        free_propagation_region_input_function=partial(free_propagation_region, width1=2, width2=20.0),
+        free_propagation_region_output_function=partial(free_propagation_region, width1=2, width2=20.0),
+        fpr_spacing=50,  # 输入/输出FPR的间距
+        arm_spacing=1,
+        #阵列波导间距
 )
 
     # wg1 = c << wg(length=10)

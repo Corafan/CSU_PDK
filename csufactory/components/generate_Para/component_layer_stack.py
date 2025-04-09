@@ -730,6 +730,8 @@ CSU_LayerStacks = {
 if __name__ == "__main__":
     import os
     from typing import Dict, Any
+    import csufactory
+    from gdsfactory.technology import LayerViews
     def export_layer_stacks(
             CSU_LayerStacks: Dict[str, Any] = {
                 "0.45%": "Si_zp45_LayerStack",
@@ -870,18 +872,18 @@ if __name__ == "__main__":
     #这里的c包含上述的所有component
     s =c.to_3d(layer_stack=Si_zp45_LayerStack)
     s.show()
-
-    #生成仅有awg的3d预览图：
-    #用新的变量可以改变器件的参数s
-    # c = awg(
-    #     inputs= 1,
-    #     arms= 9,                                      #阵列波导数量
-    #     outputs= 1,
-    #     free_propagation_region_input_function= partial(free_propagation_region, width1=2, width2=20.0),
-    #     free_propagation_region_output_function= partial(free_propagation_region, width1=2, width2=20.0),
-    #     fpr_spacing= 50.0,                            #输入/输出FPR的间距
-    #     arm_spacing= 1.0,                             #阵列波导间距
-    # )
+    #
+    # #生成仅有awg的3d预览图：
+    # #用新的变量可以改变器件的参数s
+    # # c = awg(
+    # #     inputs= 1,
+    # #     arms= 9,                                      #阵列波导数量
+    # #     outputs= 1,
+    # #     free_propagation_region_input_function= partial(free_propagation_region, width1=2, width2=20.0),
+    # #     free_propagation_region_output_function= partial(free_propagation_region, width1=2, width2=20.0),
+    # #     fpr_spacing= 50.0,                            #输入/输出FPR的间距
+    # #     arm_spacing= 1.0,                             #阵列波导间距
+    # # )
     s =c.to_3d(layer_stack=zp45_GDS)
     s.show()
 

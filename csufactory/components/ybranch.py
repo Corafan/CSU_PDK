@@ -15,27 +15,23 @@ def ybranch(
     dx: Delta = 20,
     cross_section: CrossSectionSpec = "strip",
 ) -> Component:
-    r"""y_branch.
-
+    r"""生成y_branch.
     Args:
-        gap: in um.
-        width: width of the straight in um.
-        length: length of the straight in um.
-        dy: port to port vertical spacing.
-        dx: bend length in x direction.
-        cross_section: section.
-
+        gap:y分支间隙（um），不建议修改。
+        width:起始段直波导y方向上的长度。
+        length:起始段直波导x方向上的长度。
+        dy:o2-o3两个端口之间y方向上的距离。
+        dx:y分支在x方向上的长度。
+        cross_section: 横截面类型，不建议修改。
     .. code::
-
                        dx
-             /----------------|
-                       ___ o2
-       length         /       |
-     o1_____o4_______/        |dy
-      width2         \        |
-                      \___    |
-                           o3
-
+                 /--------------|
+                            ___ o2
+           length         /       |
+（ width）o1_____o4_______/        |dy
+                         \        |
+                          \___    |
+                                   o3
     """
 
     c = Component()
