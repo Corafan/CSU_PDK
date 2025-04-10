@@ -17,18 +17,18 @@ def Ybranch_1x2(
     cross_section: CrossSectionSpec = "strip",  # 这里是直接使用字符串来表示交叉截面
     allow_min_radius_violation: bool = False,
 ) -> Component:
-    r"""Y-branch waveguide.
+    r"""生成y分支.
 
     Args:
-        length1: Length of the input waveguide.
-        length2: Length of the medium waveguide.
-        length3: Length of the output waveguide.
-        bend_radius: Radius of the first bend.
-        width: Width of the waveguide.
-        angle1: Angle for the first branch.
-        angle2: Angle for the second output direction.
-        cross_section: Cross-section type for the waveguide.
-        allow_min_radius_violation: if True does not check for min bend radius.
+        length1: 第一段输入波导在x方向上的长度.
+        length2: 中间段波导在x方向上的长度.
+        length3: 输出波导在x向上的长度.
+        bend_radius:第一段弯曲波导的半径.
+        width:波导的宽度（x）。
+        angle1: 第一段分支的角度.
+        angle2: 第二段分支的角度.
+        cross_section: 横截面类型，不建议修改。
+        allow_min_radius_violation: 如果为TRUE,则不检查最小半径，无需修改.
 
 
     .. code::

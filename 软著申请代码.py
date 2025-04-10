@@ -5,6 +5,10 @@ import functools
 import csufactory.components as components
 from typing import Dict, Any
 import datetime
+import gdsfactory as gf
+from typing import get_origin, get_args, Union, Tuple, List
+import ast
+from gdsfactory.typings import LayerSpec, CrossSectionSpec
 def list_components():
     """获取所有组件（排除 __init__.py）"""
     comp_dir = os.path.dirname(components.__file__)
@@ -45,6 +49,86 @@ def select_component():
         else:
             print("请输入 Y（确认）或 N（重新选择）")
             continue
+def convert_param_value(param_name: str, param_type, value):
+    """智能转换参数值到目标类型"""
+    if value is None or value == '':
+        return None
+    # 处理 Union 类型 (如 Union[float, None])
+    if get_origin(param_type) is Union:
+        types = [t for t in get_args(param_type) if t is not type(None)]
+        if types:
+            param_type = types[0]
+    origin = get_origin(param_type)
+    args = get_args(param_type)
+    try:
+        # 数值类型转换
+        if param_type in (float, 'float'):
+            if isinstance(value, str):
+                if 'um' in value:
+                    return float(value.replace('um', '').strip())
+                elif 'nm' in value:
+                    return float(value.replace('nm', '').strip()) / 1000
+            return float(value)
+        elif param_type in (int, 'int'):
+            return int(float(value))
+        elif param_type in (bool, 'bool'):
+            if isinstance(value, str):
+                return value.lower() in ['true', '1', 'yes', 'y']
+            return bool(value)
+        elif param_type in (str, 'str'):
+            return str(value)
+        # GDS类型
+        elif param_type is LayerSpec:
+            return gf.get_layer(value)
+        elif param_type is CrossSectionSpec:
+            return gf.get_cross_section(value) if isinstance(value, str) else value
+        # 容器类型：tuple[float, float] / list[float]
+        elif origin in (tuple, Tuple):
+            if isinstance(value, str):
+                try:
+                    val = ast.literal_eval(value)
+                    if not isinstance(val, tuple):
+                        val = tuple(val.split(','))
+                except Exception:
+                    val = tuple(value.split(','))
+            else:
+                val = value
+            return tuple(float(v.replace('um', '').replace('nm', '').strip()) / (1000 if 'nm' in v else 1)
+                         if isinstance(v, str) else float(v)
+                         for v in val)
+        elif origin in (list, List):
+            if isinstance(value, str):
+                try:
+                    val = ast.literal_eval(value)
+                    if not isinstance(val, list):
+                        val = list(val.split(','))
+                except Exception:
+                    val = list(value.split(','))
+            else:
+                val = value
+            return [float(v.replace('um', '').replace('nm', '').strip()) / (1000 if 'nm' in v else 1)
+                    if isinstance(v, str) else float(v)
+                    for v in val]
+        # 默认直接返回
+        return value
+    except Exception as e:
+        print(f"[警告] 参数 {param_name} 转换失败 ({value} → {param_type}): {str(e)}")
+        return value
+def convert_params(func, param_dict: dict):
+    """根据函数签名自动转换参数字典中的值到正确类型"""
+    sig = inspect.signature(func)
+    converted = {}
+    for name, value in param_dict.items():
+        if name not in sig.parameters:
+            continue
+        param = sig.parameters[name]
+        param_type = param.annotation
+        # 跳过无注解参数
+        if param_type is inspect.Parameter.empty:
+            converted[name] = value
+            continue
+        converted[name] = convert_param_value(name, param_type, value)
+    return converted
 def input_component_params(selected_component_name, old_params=None):
     """输入组件参数，增加参数级返回功能"""
     module = __import__(f"csufactory.components.{selected_component_name}", fromlist=[selected_component_name])
@@ -63,6 +147,28 @@ def input_component_params(selected_component_name, old_params=None):
         param = param_list[current_index]
         #设置默认值（优先使用旧参数，其次使用参数默认值）
         default_value = old_params[param.name] if (old_params and param.name in old_params) else param.default
+        # 特殊参数处理
+        if param.name in ['radius', 'angle', 'width']:
+            user_input = input(f"请输入参数 {param.name} (单位: um, 默认: {default_value}): ").strip()
+            if user_input:
+                try:
+                    # 处理带单位的输入
+                    if 'um' in user_input:
+                        param_values[param.name] = float(user_input.replace('um', ''))
+                    elif 'nm' in user_input:
+                        param_values[param.name] = float(user_input.replace('nm', '')) / 1000
+                    else:
+                        param_values[param.name] = float(user_input)
+                except ValueError:
+                    print(f"错误：'{user_input}' 不是有效的数值，使用默认值 {default_value}")
+                    param_values[param.name] = default_value
+            else:
+                param_values[param.name] = default_value
+            current_index += 1
+            continue
+        # 显示参数类型信息
+        param_type = getattr(param.annotation, "__name__", str(param.annotation))
+        input_prompt = f"请输入参数 {param.name} ({param_type}) (默认: {default_value}): "
         if isinstance(default_value, functools.partial):
             func = default_value.func
             func_params = inspect.signature(func).parameters
@@ -87,10 +193,12 @@ def input_component_params(selected_component_name, old_params=None):
             param_values[param.name] = functools.partial(func, **new_kwargs)
             current_index += 1
             continue
-        user_input = input(f"请输入参数 `{param.name}` (默认值: {default_value}) : ").strip()
+        #获取用户输入
+        user_input = input(input_prompt).strip()
         if user_input.upper() in('B',"b"):
             if current_index > 0:
-                current_index -= 1 # 回到上一个参数
+                # 回到上一个参数
+                current_index -= 1
                 # 删除上一步的参数值，以便重新输入
                 prev_param = param_list[current_index].name
                 if prev_param in param_values:
@@ -122,8 +230,15 @@ def run_component_function(func_name, param_values):
     """运行组件函数，并传入用户输入的参数"""
     module = __import__(f"csufactory.components.{func_name}", fromlist=[func_name])
     component_func = getattr(module, func_name)
-    component = component_func(**param_values)
-    return component
+    # 类型转换
+    converted_params = convert_params(component_func, param_values)
+    try:
+        component = component_func(**converted_params)
+        return component
+    except Exception as e:
+        print(f"组件执行失败: {str(e)}")
+        print("使用的参数:", converted_params)
+        raise
 def save_gds(component):
     """保存组件到GDS文件"""
     component_name = input(f"请输入文件名(若未输入，则自动分配时间名称): ")
@@ -440,10 +555,10 @@ def run():
         elif choice in ("B", "b"):
             continue
 from __future__ import annotations
-from csufactory.components.wg_arc import _wg_arc,wg_arc_all_angle,wg_arc180,wg_arc
+from csufactory.components.wg_arc import wg_arc
 from csufactory.components.awg import awg, free_propagation_region
 from csufactory.components.Sbend import Sbend
-from csufactory.components.coupler import coupler_straight,coupler_symmetric,coupler
+from csufactory.components.coupler import coupler
 from csufactory.components.crossing import crossing
 from csufactory.components.grating import grating
 from csufactory.components.mmi import mmi
@@ -453,15 +568,10 @@ from csufactory.components.star_coupler import star_coupler
 from csufactory.components.Ybranch_1x2 import Ybranch_1x2
 from csufactory.components.ybranch import ybranch
 __all__ = [
-    "_wg_arc",
-    "wg_arc_all_angle",
-    "wg_arc180",
     "wg_arc",
     "awg",
     "free_propagation_region",
     "Sbend",
-    "coupler_straight",
-    "coupler_symmetric",
     "coupler",
     "crossing",
     "grating",
@@ -474,251 +584,64 @@ __all__ = [
     ]
 #生成器件AWG
 from __future__ import annotations
-from functools import partial
-import numpy as np
 import gdsfactory as gf
 from gdsfactory.component import Component
+from functools import partial
 from gdsfactory.typings import ComponentFactory, CrossSectionSpec
-from sympy.physics.units import length
-@gf.cell
-def free_propagation_region(
-    width1: float = 2,
-    width2: float = 20.0,
-    length: float = 20.0,
-    wg_width: float = 0.5,
-    inputs: int = 1,
-    outputs: int = 9,
-    cross_section: CrossSectionSpec = "strip",
-) -> Component:
-    r"""Free propagation region.
-    Args:
-        width1: 输入区域的宽度.
-        width2: 输出区域的宽度.
-        length: 自由传播区的长度.
-        wg_width:波导宽度.
-        inputs:输入波导数量.
-        outputs:输出波导数量.
-        cross_section:横截面类型，其中包含层类型和层号.
-    .. code::
-                 length
-                 <-->
-                   /|
-                  / |
-           width1|  | width2
-                  \ |
-                   \|
-    """
-    y1 = width1 / 2
-    y2 = width2 / 2
-    xs = gf.get_cross_section(cross_section)
-    o = 0
-    layer = xs.layer
-    xpts = [0, length, length, 0]
-    ypts = [y1, y2, -y2, -y1]
-    c = gf.Component()
-    c.add_polygon(list(zip(xpts, ypts)), layer=layer)
-    if inputs == 1:
-        c.add_port(
-            "o1",
-            center=(0, 0),
-            width=wg_width,
-            orientation=180,
-            layer=layer,
-        )
-    else:
-        y = np.linspace(-width1 / 2 + wg_width / 2, width1 / 2 - wg_width / 2, inputs)
-        y = gf.snap.snap_to_grid(y)
-        for i, yi in enumerate(y):
-            c.add_port(
-                f"W{i}",
-                center=(0, yi),
-                width=wg_width,
-                orientation=180,
-                layer=layer,
-            )
-    y = np.linspace(-width2 / 2 + wg_width / 2, width2 / 2 - wg_width / 2, outputs)
-    y = gf.snap.snap_to_grid(y)
-    for i, yi in enumerate(y):
-        c.add_port(
-            f"E{i}",
-            center=(length, yi),
-            width=wg_width,
-            orientation=0,
-            layer=layer,
-        )
-    ypts = [y1 + o, y2 + o, -y2 - o, -y1 - o]
-    c.info["length"] = length
-    c.info["width1"] = width1
-    c.info["width2"] = width2
-    return c
+from gdsfactory.components.awg import free_propagation_region
 @gf.cell
 def awg(
-    inputs: int = 3,
-    arms: int = 10,
-    outputs: int = 3,
-    free_propagation_region_input_function: ComponentFactory = partial(free_propagation_region, width1=2, width2=20.0,length=20,wg_width=0.5),
-    free_propagation_region_output_function: ComponentFactory = partial(free_propagation_region, width1=10, width2=20.0,length=20,wg_width=0.5),
-    fpr_spacing: float = 50.0,
-    arm_spacing: float = 1.0,
-    cross_section: CrossSectionSpec = "strip",
-) -> Component:
+        inputs: int = 3,
+        arms: int = 10,
+        outputs: int = 3,
+        free_propagation_region_input_function: ComponentFactory = partial(
+            free_propagation_region, width1=2, width2=20.0,length=20,wg_width=0.5),
+        free_propagation_region_output_function: ComponentFactory = partial(
+            free_propagation_region, width1=10, width2=20.0,length=20,wg_width=0.5),
+        fpr_spacing: float = 50.0,
+        arm_spacing: float = 1.0,
+        cross_section: CrossSectionSpec = "strip"
+)-> Component:
     """生成阵列波导光栅.
-    Args:
-        inputs:输入端口数量.
-        arms:阵列波导数量.
-        outputs:输出波导数量.
-        free_propagation_region_input_function:输入的星型耦合器尺寸.
-        free_propagation_region_output_function:输出的星型耦合器尺寸.
-        fpr_spacing:输入输出星型耦合器的阵列波导在x方向上的间距。
-        arm_spacing:阵列波导y方向上的高度差.
-        cross_section:横截面类型，其中包含层类型和层号.
-    函数Free propagation region:
-    Args:
-        width1: 输入区域的宽度.
-        width2: 输出区域的宽度.
-        length: 自由传播区的长度.
-        wg_width:波导宽度.
-    .. code::
-                 length
-                 <-->
-                   /|
-                  / |
-           width1|  | width2
-                  \ |
-                   \|
-    """
-    c = gf.Component()
-    fpr_in = free_propagation_region_input_function(
-        inputs=inputs,
-        outputs=arms,
-        cross_section=cross_section,
+      Args:
+          inputs:输入端口数量.
+          arms:阵列波导数量.
+          outputs:输出波导数量.
+          free_propagation_region_input_function:输入的星型耦合器尺寸.
+          free_propagation_region_output_function:输出的星型耦合器尺寸.
+          fpr_spacing:输入输出星型耦合器的阵列波导在x方向上的间距。
+          arm_spacing:阵列波导y方向上的高度差.
+          cross_section:横截面类型，其中包含层类型和层号.
+      函数Free propagation region:
+      Args:
+          width1: 输入区域的宽度.
+          width2: 输出区域的宽度.
+          length: 自由传播区的长度.
+          wg_width:波导宽度.
+      .. code::
+                   length
+                   <-->
+                     /|
+                    / |
+             width1|  | width2
+                    \ |
+                     \|
+      """
+    return gf.components.awg(
+        inputs = inputs,
+        arms=arms,
+        outputs= outputs,
+        free_propagation_region_input_function= free_propagation_region_input_function,
+        free_propagation_region_output_function=free_propagation_region_output_function,
+        fpr_spacing= fpr_spacing,
+        arm_spacing= arm_spacing,
+        cross_section=cross_section
     )
-    fpr_out = free_propagation_region_output_function(
-        inputs=outputs,
-        outputs=arms,
-        cross_section=cross_section,
-    )
-    fpr_in_ref = c.add_ref(fpr_in)
-    fpr_out_ref = c.add_ref(fpr_out)
-    fpr_in_ref.drotate(90)
-    fpr_out_ref.drotate(90)
-    fpr_out_ref.dx += fpr_spacing
-    _ = gf.routing.route_bundle(
-        c,
-        gf.port.get_ports_list(fpr_out_ref, prefix="E"),
-        gf.port.get_ports_list(fpr_in_ref, prefix="E"),
-        sort_ports=True,
-        separation=arm_spacing,
-        cross_section=cross_section,
-        radius=10,
-        bend=gf.components.bend_circular
-    )
-    if inputs == 1:
-        c.add_port(
-            "I1",
-            port=fpr_in_ref.ports["o1"]
-        )
-    else:
-        for i, port in enumerate(gf.port.get_ports_list(fpr_in_ref, prefix="W")):
-            c.add_port(f"I{i}", port=port)
-    if outputs == 1:
-        c.add_port(
-            "O1",
-            port=fpr_out_ref.ports["o1"]
-        )
-    else:
-        for i, port in enumerate(gf.port.get_ports_list(fpr_out_ref, prefix="W")):
-            c.add_port(f"O{i}", port=port)
 #生成器件coupler
 from __future__ import annotations
 import gdsfactory as gf
 from gdsfactory.component import Component
 from gdsfactory.typings import CrossSectionSpec, Delta
-from gdsfactory.components.bend_s import bend_s
-@gf.cell
-def coupler_straight(
-    length: float = 10.0,
-    gap: float = 0.27,
-    cross_section: CrossSectionSpec = "strip",
-) -> Component:
-    """Coupler_straight with two parallel straights.
-    Args:
-        length: of straight.
-        gap: between straights.
-        cross_section: specification (CrossSection, string or dict).
-    .. code::
-        o2──────▲─────────o3
-                │gap
-        o1──────▼─────────o4
-    """
-    c = gf.Component()
-    straight = gf.components.straight(length=length, cross_section=cross_section)
-    top = c << straight
-    bot = c << straight
-    w = straight.ports[0].dwidth
-    y = w + gap
-    top.dmovey(+y)
-    c.add_port("o1", port=bot.ports[0])
-    c.add_port("o2", port=top.ports[0])
-    c.add_port("o3", port=bot.ports[1])
-    c.add_port("o4", port=top.ports[1])
-    c.auto_rename_ports()
-    c.draw_ports()
-    return c
-@gf.cell
-def coupler_symmetric(
-    gap: float = 0.234,
-    dy: Delta = 4.0,
-    dx: Delta = 10.0,
-    cross_section: CrossSectionSpec = "strip",
-) -> Component:
-    r"""Two coupled straights with bends.
-    Args:
-        bend: bend spec.
-        gap: in um.
-        dy: port to port vertical spacing.
-        dx: bend length in x direction.
-        cross_section: section.
-    .. code::
-                       dx
-                    |-----|
-                       ___ o3
-                      /       |
-             o2 _____/        |
-                              |
-             o1 _____         |  dy
-                     \        |
-                      \___    |
-                           o4
-    """
-    bend= bend_s,
-    c = Component()
-    x = gf.get_cross_section(cross_section)
-    width = x.width
-    dy = (dy - gap - width) / 2
-    bend_component = gf.get_component(
-        bend,
-        size=(dx, dy),
-        cross_section=cross_section,
-    )
-    top_bend = c << bend_component
-    bot_bend = c << bend_component
-    bend_ports = top_bend.ports.filter(port_type="optical")
-    bend_port1_name = bend_ports[0].name
-    bend_port2_name = bend_ports[1].name
-    w = bend_component[bend_port1_name].dwidth
-    y = w + gap
-    y /= 2
-    bot_bend.dmirror_y()
-    top_bend.dmovey(+y)
-    bot_bend.dmovey(-y)
-    c.add_port("o1", port=bot_bend[bend_port1_name])
-    c.add_port("o2", port=top_bend[bend_port1_name])
-    c.add_port("o3", port=top_bend[bend_port2_name])
-    c.add_port("o4", port=bot_bend[bend_port2_name])
-    c.info["length"] = bend_component.info["length"]
-    c.info["min_bend_radius"] = bend_component.info["min_bend_radius"]
-    return c
 @gf.cell
 def coupler(
         gap: float = 0.5,
@@ -728,14 +651,14 @@ def coupler(
         cross_section: CrossSectionSpec = "strip",
         allow_min_radius_violation: bool = False,
 ) -> Component:
-    r"""Symmetric coupler.
+    r"""生成方向耦合器。
     Args:
-        gap: between straights in um.
-        length: of coupling region in um.
-        dy: port to port vertical spacing in um.
-        dx: length of bend in x direction in um.
-        cross_section: spec (CrossSection, string or dict).
-        allow_min_radius_violation: if True does not check for min bend radius.
+        gap: 两个直波导之间的间隙，um。
+        length: 直波导长度，um。
+        dy: y方向上两个端口之间的垂直距离，um。
+        dx: x方向上弯曲波导的长度，um。
+        cross_section: 横截面类型，一般无需修改。
+        allow_min_radius_violation: 如果为True,则无需检查最小弯曲半径，一般无需修改。
     .. code::
                dx                                 dx
             |------|                           |------|
@@ -746,28 +669,16 @@ def coupler(
                      /                       \            |
             ________/                         \_______    |
          o1                                          o4
-                        coupler_straight  coupler_symmetric
+                        coupler_straight
     """
-    c = Component()
-    sbend = gf.components.coupler_symmetric(gap=gap, dy=dy, dx=dx, cross_section=cross_section)
-    sr = c << sbend
-    sl = c << sbend
-    cs = c << coupler_straight(length=length, gap=gap, cross_section=cross_section)
-    sl.connect("o2", other=cs.ports["o1"])
-    sr.connect("o1", other=cs.ports["o4"])
-    c.add_port("o1", port=sl.ports["o3"])
-    c.add_port("o2", port=sl.ports["o4"])
-    c.add_port("o3", port=sr.ports["o3"])
-    c.add_port("o4", port=sr.ports["o4"])
-    c.info["length"] = sbend.info["length"]
-    c.info["min_bend_radius"] = sbend.info["min_bend_radius"]
-    c.auto_rename_ports()
-    x = gf.get_cross_section(cross_section)
-    x.add_bbox(c)
-    c.flatten()
-    if not allow_min_radius_violation:
-        x.validate_radius(x.radius)
-    return c
+    return gf.components.coupler(
+        gap=gap,
+        length=length,
+        dx=dx,
+        dy=dy,
+        cross_section=cross_section,
+        allow_min_radius_violation=allow_min_radius_violation,
+    )
 #生成器件crossing
 from __future__ import annotations
 import gdsfactory as gf
@@ -918,6 +829,8 @@ def mmi(
                   |          /
                   | ________|
     """
+    inputs = int(inputs)
+    outputs = int(outputs)
     c = gf.Component()
     gap_mmi_in=(width_mmi-width_wg*inputs)/inputs
     gap_mmi_out=(width_mmi-width_wg*outputs)/outputs
@@ -1200,103 +1113,10 @@ def star_coupler(
     return c
 #生成器件wg_arc
 from __future__ import annotations
-from functools import partial
-from typing import Literal, overload
 import gdsfactory as gf
-from gdsfactory.component import Component, ComponentAllAngle
-from gdsfactory.path import arc
-from gdsfactory.snap import snap_to_grid
-from gdsfactory.typings import CrossSectionSpec, LayerSpec
-@overload
-def _wg_arc(
-    radius: float | None = None,
-    angle: float = 90.0,
-    npoints: int | None = None,
-    layer: LayerSpec | None = None,
-    width: float | None = None,
-    cross_section: CrossSectionSpec = "strip",
-    allow_min_radius_violation: bool = False,
-    all_angle: Literal[False] = False,
-) -> Component: ...
-#如果 all_angle=False，返回Component（标准组件）
-@overload
-def _wg_arc(
-    radius: float | None = None,
-    angle: float = 90.0,
-    npoints: int | None = None,
-    layer: LayerSpec | None = None,
-    width: float | None = None,
-    cross_section: CrossSectionSpec = "strip",
-    allow_min_radius_violation: bool = False,
-    all_angle: Literal[True] = True,
-) -> ComponentAllAngle: ...
-#如果 all_angle=True，返回 ComponentAllAngle（支持任意角度的组件）。
-def _wg_arc(
-    radius: float | None = None,
-    angle: float = 90.0,
-    npoints: int | None = None,
-    layer: LayerSpec | None = None,
-    width: float | None = None,
-    cross_section: CrossSectionSpec = "strip",
-    allow_min_radius_violation: bool = False,
-    all_angle: bool = False,
-) -> Component | ComponentAllAngle:
-    """Returns a radial arc.
-    Args:
-        radius: in um. Defaults to cross_section_radius.
-        angle: angle of arc (degrees).
-        npoints: number of points.
-        layer: layer to use. Defaults to cross_section.layer.
-        width: width to use. Defaults to cross_section.width.
-        cross_section: spec (CrossSection, string or dict).
-        allow_min_radius_violation: if True allows radius to be smaller than cross_section radius.
-        all_angle: if True returns a ComponentAllAngle.
-    .. code::
-                  o2
-                  |
-                 /
-                /
-        o1_____/
-    """
-    x = gf.get_cross_section(cross_section)
-    radius = radius or x.radius
-    assert radius is not None
-    if layer and width:
-        x = gf.get_cross_section(
-            cross_section, layer=layer or x.layer, width=width or x.width
-        )
-    elif layer:
-        x = gf.get_cross_section(cross_section, layer=layer or x.layer)
-    elif width:
-        x = gf.get_cross_section(cross_section, width=width or x.width)
-    #调用arc函数,生成弧形路径,下一步是用cross section挤出路径,生成波导
-    p = arc(radius=radius, angle=angle, npoints=npoints)
-    c = p.extrude(x, all_angle=all_angle)
-    c.info["length"] = float(snap_to_grid(p.length()))
-    #波导的起点和终点在X方向上的差值,abs绝对值保证dy为正
-    c.info["dy"] = float(abs(p.points[0][0] - p.points[-1][0]))
-    c.info["radius"] = float(radius)
-    c.info["width"] = width or x.width
-    #当 angle 为 180°、-180° 或 -90° 时：top = None，表示不添加顶部边界（直线或向下弯曲，不需要额外的顶部边界）,允许其他模块靠近。
-    # 否则：top = 0，表示需要添加顶部边界。
-    top = None if int(angle) in {180, -180, -90} else 0
-    # 当 angle = -90° 时：bottom = 0，表示需要添加底部边界,防止超出设计区。
-    # 否则：bottom = None，表示不添加底部边界。
-    bottom = 0 if int(angle) in {-90} else None
-    x.add_bbox(c, top=top, bottom=bottom)  # type: ignore
-    #是否允许波导半径小于最小允许半径,false(默认是false)表示不允许小于最小弯曲半径
-    if not allow_min_radius_violation:
-        # 检查 radius 是否比 x 的最小允许半径 x.min_radius 小.
-        # 如果 radius < x.min_radius，抛出错误，避免产生无法制造的设计。
-        x.validate_radius(radius)
-    #给 Component（波导）添加额外的路由信息
-    c.add_route_info(
-        cross_section=x,
-        length=c.info["length"],
-        n_bend_90=abs(angle / 90.0),
-        min_bend_radius=radius,
-    )
-    return c
+from gdsfactory.component import Component
+from gdsfactory.typings import CrossSectionSpec
+from gdsfactory.components.bend_circular import _bend_circular
 @gf.cell
 def wg_arc(
     radius: float | None = None,
@@ -1307,21 +1127,28 @@ def wg_arc(
     cross_section: CrossSectionSpec = "strip",
     allow_min_radius_violation: bool = False,
 ) -> Component:
-    """Returns a radial arc.
+    """生成圆弧。
     Args:
-        radius: in um. Defaults to cross_section_radius.
-        angle: angle of arc (degrees).
-        npoints: number of points.
-        layer: layer to use. Defaults to cross_section.layer.
-        width: width to use. Defaults to cross_section.width.
-        cross_section: spec (CrossSection, string or dict).
-        allow_min_radius_violation: if True allows radius to be smaller than cross_section radius.
+        radius: 半径，默认为圆环横截面类型的半径。
+        angle: 圆弧旋转的角度.
+        npoints: 点的数量，调整精度的一般无需修改.
+        layer: 层，一般无需修改，默认为横截面类型对应的层“WG”。
+        width: 圆弧波导的宽度，外环半径与内环半径的插值，默认为横截面类型的宽度。
+        cross_section:横截面类型，一般无需修改。
+        allow_min_radius_violation: 如果为True,则允许半径小于横截面类型对应的半径，一般无需修改。
     """
-    if angle not in {90, 180}:
-        gf.logger.warning(
-            f"wg_acr angle should be 90 or 180. Got {angle}. Use wg_arc_all_angle instead."
-        )
-    return _wg_arc(
+    # 强制类型转换和验证
+    try:
+        radius = float(radius) if radius is not None else None
+        angle = float(angle) if angle is not None else 90.0
+        if width is not None:
+            width = float(width)
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"参数类型错误: {str(e)}") from e
+    # 参数验证
+    if radius is not None and radius <= 0:
+        raise ValueError(f"半径必须是正数，当前为 {radius}")
+    return _bend_circular(
         radius=radius,
         angle=angle,
         npoints=npoints,
@@ -1331,38 +1158,6 @@ def wg_arc(
         allow_min_radius_violation=allow_min_radius_violation,
         all_angle=False,
     )
-@gf.vcell
-def wg_arc_all_angle(
-    radius: float | None = None,
-    angle: float = 90.0,
-    npoints: int | None = None,
-    layer: gf.typings.LayerSpec | None = None,
-    width: float | None = None,
-    cross_section: CrossSectionSpec = "strip",
-    allow_min_radius_violation: bool = False,
-) -> ComponentAllAngle:
-    """Returns a radial arc.
-    Args:
-        radius: in um. Defaults to cross_section_radius.
-        angle: angle of arc (degrees).
-        npoints: number of points.
-        layer: layer to use. Defaults to cross_section.layer.
-        width: width to use. Defaults to cross_section.width.
-        cross_section: spec (CrossSection, string or dict).
-        allow_min_radius_violation: if True allows radius to be smaller than cross_section radius.
-    """
-    return _wg_arc(
-        radius=radius,
-        angle=angle,
-        npoints=npoints,
-        layer=layer,
-        width=width,
-        cross_section=cross_section,
-        allow_min_radius_violation=allow_min_radius_violation,
-        all_angle=True,
-    )
-#即wg_arc180是wg_arc(angle=180, ...)的固定版本，直接调用时默认angle=180。
-wg_arc180 = partial(wg_arc, angle=180)
 #生成器件ybranch
 from __future__ import annotations
 import gdsfactory as gf
@@ -2229,7 +2024,276 @@ z150_GDS= LayerStack(
         ),
     }
 )
-#运行函数
+#生成layer.lyp和tech.lyt文件，用于klayout中层的显示。
+from gdsfactory.technology import LayerViews
 if __name__ == "__main__":
+    layer_views_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\layer_views.yaml"
+    layer_lyp_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\klayout\salt\layer.lyp"
+    LAYER_VIEWS = LayerViews(filepath=layer_views_path)
+    print(f"已从{layer_views_path}中获取层信息")
+    LAYER_VIEWS.to_lyp(filepath=layer_lyp_path)
+    print(f"将层信息转为lyp文件保存至{layer_lyp_path}")
+    #生成每层的预览图
+    c = LAYER_VIEWS.preview_layerset()
+    c.show()
+#运行用户交互函数
     from csufactory.dialoge import run
     run()
+
+
+
+# #定义layer_view的.yaml文件,用于生成.lyp和.lyt文件。
+# LayerViews:
+#   Si_Sub:
+#     layer: [88, 0]
+#     layer_in_name: true
+#     hatch_pattern: coarsely dotted
+#     width: 1
+#     color: "cyan"
+#   SiO_Bottom_Clad:
+#     layer: [87, 0]
+#     layer_in_name: true
+#     hatch_pattern: strongly right-hatched dense
+#     transparent: true
+#     width: 1
+#     color: "springgreen"
+#   WG:
+#     layer: [200, 0]
+#     layer_in_name: true
+#     hatch_pattern: strongly left-hatched sparse
+#     transparent: true
+#     width: 1
+#     color: "#ff9d9d"
+#   WGN:
+#     layer: [201, 0]
+#     layer_in_name: true
+#     hatch_pattern: lightly left-hatched
+#     transparent: true
+#     width: 1
+#     color: "royalblue"
+#   Full_Etch:
+#     layer: [1, 2]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     transparent: true
+#     width: 1
+#     color: "deeppink"
+#   SLAB90:
+#     layer: [2, 1]
+#     layer_in_name: true
+#     hatch_pattern: dotted
+#     width: 1
+#     color: "dodgerblue"
+#   Deep_Etch:
+#     layer: [2, 2]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     transparent: true
+#     width: 1
+#     color: "dodgerblue"
+#   SLAB150:
+#     layer: [3, 1]
+#     layer_in_name: true
+#     hatch_pattern: dotted
+#     width: 1
+#     color: "gold"
+#   Shallow_Etch:
+#     layer: [3, 2]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     transparent: true
+#     width: 1
+#     color: "gold"
+#   SiO_ToP_Clad:
+#     layer: [4, 0]
+#     layer_in_name: true
+#     hatch_pattern: coarsely dotted
+#     width: 1
+#     color: "lightcoral"
+#   Wet_Etch_Heater:
+#     layer: [5, 2]
+#     layer_in_name: true
+#     hatch_pattern: vertical dense
+#     width: 1
+#     color: "thistle"
+#   Metal_TiN:
+#     layer: [10, 0]
+#     layer_in_name: true
+#     hatch_pattern: solid
+#     transparent: true
+#     width: 1
+#     color: "yellow"
+#   Dry_Etch_Heater_Clad:
+#     layer: [6, 2]
+#     layer_in_name: true
+#     hatch_pattern: vertical dense
+#     width: 1
+#     color: "teal"
+#   SiO_Oxide_1:
+#     layer: [11, 0]
+#     layer_in_name: true
+#     hatch_pattern: left-hatched
+#     color: "#cc0000"
+#   Wet_Etch_Electrode:
+#     layer: [7, 2]
+#     layer_in_name: true
+#     hatch_pattern: vertical dense
+#     width: 1
+#     color: "greenyellow"
+#   Metal_Al:
+#     layer: [12, 0]
+#     layer_in_name: true
+#     hatch_pattern: solid
+#     width: 1
+#     color: "lightsteelblue"
+#   Metal_Ti:
+#     layer: [13, 0]
+#     layer_in_name: true
+#     hatch_pattern: solid
+#     width: 1
+#     color: "#e1ffff"
+#   Full_Etch_SiN:
+#     layer: [8, 2]
+#     layer_in_name: true
+#     hatch_pattern: vertical dense
+#     width: 1
+#     color: "#ee1490"
+#   SiN:
+#     layer: [20, 0]
+#     layer_in_name: true
+#     hatch_pattern: turned pyramids
+#     width: 1
+#     color: "magenta"
+#   Doping:
+#     group_members:
+#       NWD:
+#         layer: [30, 0]
+#         layer_in_name: true
+#         frame_color: "red"
+#         fill_color: "red"
+#         hatch_pattern: lightly left-hatched
+#         width: 1
+#       PWD:
+#         layer: [31, 0]
+#         layer_in_name: true
+#         frame_color: "blue"
+#         fill_color: "blue"
+#         hatch_pattern: lightly left-hatched
+#         transparent: true
+#         width: 1
+#       ND1:
+#         layer: [32, 0]
+#         layer_in_name: true
+#         frame_color: "red"
+#         fill_color: "red"
+#         hatch_pattern: strongly right-hatched dense
+#         width: 1
+#       PD1:
+#         layer: [33, 0]
+#         layer_in_name: true
+#         frame_color: "blue"
+#         fill_color: "blue"
+#         hatch_pattern: strongly right-hatched dense
+#         width: 1
+#       ND2:
+#         layer: [34, 0]
+#         layer_in_name: true
+#         frame_color: "red"
+#         fill_color: "red"
+#         hatch_pattern: coarsely dotted
+#         width: 1
+#       PD2:
+#         layer: [35, 0]
+#         layer_in_name: true
+#         frame_color: "blue"
+#         fill_color: "blue"
+#         hatch_pattern: coarsely dotted
+#         width: 1
+#       ND_Ohmic:
+#         layer: [36, 0]
+#         layer_in_name: true
+#         frame_color: "khaki"
+#         fill_color: "khaki"
+#         hatch_pattern: plus
+#         width: 1
+#       PD_Ohmic:
+#         layer: [37, 0]
+#         layer_in_name: true
+#         frame_color: "sandybrown"
+#         fill_color: "sandybrown"
+#         hatch_pattern: plus
+#         width: 1
+#   TE:
+#     layer: [203, 0]
+#     layer_in_name: true
+#     transparent: true
+#     width: 1
+#     color: "blue"
+#   TM:
+#     layer: [204, 0]
+#     layer_in_name: true
+#     width: 1
+#     color: "red"
+#   PORT:
+#     layer: [140, 10]
+#     layer_in_name: true
+#     transparent: true
+#     width: 1
+#     color: "magenta"
+#   PORTE:
+#     layer: [140, 11]
+#     layer_in_name: true
+#     width: 1
+#     color: "#cc4c00"
+#   Label_Optical_IO:
+#     layer: [95, 0]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     width: 1
+#     color: "blue"
+#   Label_Settings:
+#     layer: [96, 0]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     width: 1
+#     color: "magenta"
+#   TXT:
+#     layer: [97, 0]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     width: 1
+#     color: "grey"
+#   DA:
+#     layer: [98, 0]
+#     layer_in_name: true
+#     hatch_pattern: coarsely dotted
+#     width: 1
+#     color: "#01ff6b"
+#     brightness: -16
+#   DevRec:
+#     layer: [99, 0]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     visible: false
+#     transparent: true
+#     width: 1
+#     color: "#004080"
+#   Errors:
+#     layer: [69, 0]
+#     layer_in_name: true
+#     hatch_pattern: hollow
+#     width: 1
+#     color: "grey"
+#   DRC_MARKER:
+#     layer: [205, 0]
+#     layer_in_name: true
+#     transparent: true
+#     width: 3
+#     color: "red"
+#   MOPT:
+#     layer: [9999, 0]
+#     layer_in_name: true
+#     hatch_pattern: strongly right-hatched dense
+#     transparent: true
+#     width: 1
+#     color: "#8400ff"

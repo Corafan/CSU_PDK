@@ -5,7 +5,6 @@ import gdsfactory as gf
 from gdsfactory.component import Component
 
 
-
 @gf.cell
 def mmi(
     inputs: float = 6,
@@ -47,11 +46,13 @@ def mmi(
                   |          /
                   | ________|
     """
+    inputs = int(inputs)
+    outputs = int(outputs)
+
     c = gf.Component()
 
     gap_mmi_in=(width_mmi-width_wg*inputs)/inputs
     gap_mmi_out=(width_mmi-width_wg*outputs)/outputs
-    # gap_mmi = gf.snap.snap_to_grid(gap_mmi, grid_factor=2)
     w_mmi = width_mmi
 
     wg1=gf.components.straight(width=width_wg,length=length_wg, cross_section=cross_section)

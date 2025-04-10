@@ -1,10 +1,8 @@
 from __future__ import annotations
-from csufactory.components.wg_arc import _wg_arc,wg_arc_all_angle,wg_arc180,wg_arc
+from csufactory.components.wg_arc import wg_arc
 from csufactory.components.awg import awg, free_propagation_region
 from csufactory.components.Sbend import Sbend
 from csufactory.components.coupler import (
-    coupler_straight,
-    coupler_symmetric,
     coupler,
 )
 from csufactory.components.crossing import crossing
@@ -17,15 +15,10 @@ from csufactory.components.Ybranch_1x2 import Ybranch_1x2
 from csufactory.components.ybranch import ybranch
 
 __all__ = [
-    "_wg_arc",
-    "wg_arc_all_angle",
-    "wg_arc180",
     "wg_arc",
     "awg",
     "free_propagation_region",
     "Sbend",
-    "coupler_straight",
-    "coupler_symmetric",
     "coupler",
     "crossing",
     "grating",

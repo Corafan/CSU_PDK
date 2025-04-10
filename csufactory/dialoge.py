@@ -1,14 +1,14 @@
 from __future__ import annotations
 import os
 import inspect
-import functools  # partial 用于处理函数参数
+import functools
 import csufactory.components as components
 from typing import Dict, Any
 import datetime
 import gdsfactory as gf
-from functools import partial
-from gdsfactory.add_pins import add_pins_inside1nm
-from csufactory.generic_tech.layer_map import CSULAYER as LAYER
+from typing import get_origin, get_args, Union, Tuple, List
+import ast
+from gdsfactory.typings import LayerSpec, CrossSectionSpec
 
 # # 定义添加端口的功能
 # _add_pins = partial(
@@ -94,6 +94,203 @@ def select_component():
             print("请输入 Y（确认）或 N（重新选择）")
             continue
 
+# def convert_param_value(param_name: str, param_type, value):
+#     """智能转换单个参数值到目标类型"""
+#     if value is None or value == '':
+#         return None
+#
+#     # 处理 Union 类型 (如 Union[float, None])
+#     if get_origin(param_type) is Union:
+#         types = [t for t in get_args(param_type) if t is not type(None)]
+#         if types:
+#             param_type = types[0]
+#
+#     try:
+#         # 特殊处理数值类型
+#         if param_type in (float, 'float'):
+#             if isinstance(value, str):
+#                 # 处理可能带单位的字符串 (如 "10um" -> 10.0)
+#                 if 'um' in value:
+#                     return float(value.replace('um', '').strip())
+#                 elif 'nm' in value:
+#                     return float(value.replace('nm', '').strip()) / 1000
+#             return float(value)
+#
+#         elif param_type in (int, 'int'):
+#             return int(float(value))  # 先转float再转int，避免"10.0"这样的字符串
+#
+#         # 基础类型转换
+#         if param_type is float:
+#             return float(value)
+#         elif param_type is int:
+#             return int(value)
+#         elif param_type is bool:
+#             if isinstance(value, str):
+#                 return value.lower() in ['true', '1', 'yes', 'y']
+#             return bool(value)
+#
+#         # GDSFactory特殊类型处理
+#         elif param_type is LayerSpec:
+#             return gf.get_layer(value)
+#         elif param_type is CrossSectionSpec:
+#             if isinstance(value, str):
+#                 return gf.get_cross_section(value)
+#             return value
+#
+#         # 容器类型
+#         elif param_type is tuple:
+#             if isinstance(value, str):
+#                 try:
+#                     # 尝试解析成 tuple
+#                     val = ast.literal_eval(value)
+#                     if isinstance(val, tuple):
+#                         # 支持带单位，如 "3um"
+#                         return tuple(float(v.replace("um", "").replace("nm", "").strip()) / (1000 if "nm" in v else 1)
+#                                      if isinstance(v, str) else float(v) for v in val)
+#                     else:
+#                         # 可能是用逗号分隔的字符串，如 "3,5"
+#                         val = value.split(",")
+#                         return tuple(float(v.replace("um", "").replace("nm", "").strip()) / (1000 if "nm" in v else 1)
+#                                      for v in val)
+#                 except Exception as e:
+#                     print(f"[警告] 参数 {param_name} 解析 tuple 失败: {e}")
+#                     return value
+#             return tuple(value) if not isinstance(value, tuple) else value
+#
+#         elif param_type is list:
+#             if isinstance(value, str):
+#                 return eval(value) if value.startswith('[') else value.split(',')
+#             return list(value) if not isinstance(value, list) else value
+#
+#         # 默认不转换
+#         return value
+#
+#
+#     except Exception as e:
+#         print(f"[警告] 参数 {param_name} 转换失败 ({value} → {param_type}): {str(e)}")
+#         return value
+#
+#
+# def convert_params(func, param_dict: dict):
+#     """根据函数签名自动转换参数字典中的值到正确类型"""
+#     sig = inspect.signature(func)
+#     converted = {}
+#
+#     for name, value in param_dict.items():
+#         if name not in sig.parameters:
+#             continue
+#
+#         param = sig.parameters[name]
+#         param_type = param.annotation
+#
+#         # 跳过无注解参数
+#         if param_type is inspect.Parameter.empty:
+#             converted[name] = value
+#             continue
+#
+#         converted[name] = convert_param_value(name, param_type, value)
+#
+#     return converted
+
+def convert_param_value(param_name: str, param_type, value):
+    """智能转换单个参数值到目标类型"""
+    if value is None or value == '':
+        return None
+
+    # 处理 Union 类型 (如 Union[float, None])
+    if get_origin(param_type) is Union:
+        types = [t for t in get_args(param_type) if t is not type(None)]
+        if types:
+            param_type = types[0]
+
+    origin = get_origin(param_type)
+    args = get_args(param_type)
+
+    try:
+        # 数值类型转换
+        if param_type in (float, 'float'):
+            if isinstance(value, str):
+                if 'um' in value:
+                    return float(value.replace('um', '').strip())
+                elif 'nm' in value:
+                    return float(value.replace('nm', '').strip()) / 1000
+            return float(value)
+
+        elif param_type in (int, 'int'):
+            return int(float(value))
+
+        elif param_type in (bool, 'bool'):
+            if isinstance(value, str):
+                return value.lower() in ['true', '1', 'yes', 'y']
+            return bool(value)
+
+        elif param_type in (str, 'str'):
+            return str(value)
+
+        # GDSFactory 类型
+        elif param_type is LayerSpec:
+            return gf.get_layer(value)
+        elif param_type is CrossSectionSpec:
+            return gf.get_cross_section(value) if isinstance(value, str) else value
+
+        # 容器类型：tuple[float, float] / list[float]
+        elif origin in (tuple, Tuple):
+            if isinstance(value, str):
+                try:
+                    val = ast.literal_eval(value)
+                    if not isinstance(val, tuple):
+                        val = tuple(val.split(','))
+                except Exception:
+                    val = tuple(value.split(','))
+            else:
+                val = value
+            return tuple(float(v.replace('um', '').replace('nm', '').strip()) / (1000 if 'nm' in v else 1)
+                         if isinstance(v, str) else float(v)
+                         for v in val)
+
+        elif origin in (list, List):
+            if isinstance(value, str):
+                try:
+                    val = ast.literal_eval(value)
+                    if not isinstance(val, list):
+                        val = list(val.split(','))
+                except Exception:
+                    val = list(value.split(','))
+            else:
+                val = value
+            return [float(v.replace('um', '').replace('nm', '').strip()) / (1000 if 'nm' in v else 1)
+                    if isinstance(v, str) else float(v)
+                    for v in val]
+
+        # 默认直接返回
+        return value
+
+    except Exception as e:
+        print(f"[警告] 参数 {param_name} 转换失败 ({value} → {param_type}): {str(e)}")
+        return value
+
+
+def convert_params(func, param_dict: dict):
+    """根据函数签名自动转换参数字典中的值到正确类型"""
+    sig = inspect.signature(func)
+    converted = {}
+
+    for name, value in param_dict.items():
+        if name not in sig.parameters:
+            continue
+
+        param = sig.parameters[name]
+        param_type = param.annotation
+
+        # 跳过无注解参数
+        if param_type is inspect.Parameter.empty:
+            converted[name] = value
+            continue
+
+        converted[name] = convert_param_value(name, param_type, value)
+
+    return converted
+
 def input_component_params(selected_component_name, old_params=None):
     """只负责输入组件参数，增加参数级返回功能"""
     # 动态导入组件函数
@@ -115,7 +312,6 @@ def input_component_params(selected_component_name, old_params=None):
     print("----------------------------------------")
     while current_index < len(param_list):
         param = param_list[current_index]
-
         # 设置默认值（优先使用旧参数，其次使用参数默认值）
         default_value = old_params[param.name] if (old_params and param.name in old_params) else param.default
 
@@ -123,6 +319,29 @@ def input_component_params(selected_component_name, old_params=None):
         # print(f"\n当前参数 ({current_index + 1}/{len(param_list)}):")
         # print(f"已输入参数: {list(param_values.keys())}")
         # print(f"待输入参数: {[p.name for p in param_list[current_index + 1:]]}")
+
+        #特殊参数处理
+        if param.name in ['radius', 'angle', 'width']:
+            user_input = input(f"请输入参数 {param.name} (单位: um, 默认: {default_value}): ").strip()
+            if user_input:
+                try:
+                    # 处理带单位的输入
+                    if 'um' in user_input:
+                        param_values[param.name] = float(user_input.replace('um', ''))
+                    elif 'nm' in user_input:
+                        param_values[param.name] = float(user_input.replace('nm', '')) / 1000
+                    else:
+                        param_values[param.name] = float(user_input)
+                except ValueError:
+                    print(f"错误：'{user_input}' 不是有效的数值，使用默认值 {default_value}")
+                    param_values[param.name] = default_value
+            else:
+                param_values[param.name] = default_value
+            current_index += 1
+            continue
+        # 显示参数类型信息
+        param_type = getattr(param.annotation, "__name__", str(param.annotation))
+        input_prompt = f"请输入参数 {param.name} ({param_type}) (默认: {default_value}): "
 
         if isinstance(default_value, functools.partial):
             func = default_value.func
@@ -154,7 +373,7 @@ def input_component_params(selected_component_name, old_params=None):
             continue
 
         # 获取用户输入
-        user_input = input(f"请输入参数 `{param.name}` (默认值: {default_value}) : ").strip()
+        user_input = input(input_prompt).strip()
 
         # 处理特殊命令
         if user_input.upper() in('B',"b"):  # 返回上一步
@@ -198,8 +417,15 @@ def run_component_function(func_name, param_values):
     """运行组件函数，并传入用户输入的参数"""
     module = __import__(f"csufactory.components.{func_name}", fromlist=[func_name])
     component_func = getattr(module, func_name)
-    component = component_func(**param_values)  # 使用用户输入的参数运行组件函数
-    return component  # 返回生成的组件对象
+    # 类型转换
+    converted_params = convert_params(component_func, param_values)
+    try:
+        component = component_func(**converted_params)
+        return component
+    except Exception as e:
+        print(f"组件执行失败: {str(e)}")
+        print("使用的参数:", converted_params)
+        raise
 
 def save_gds(component):
     """保存组件到GDS文件"""
