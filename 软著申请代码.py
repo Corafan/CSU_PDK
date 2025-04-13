@@ -610,7 +610,7 @@ def awg(
           free_propagation_region_input_function:输入的星型耦合器尺寸.
           free_propagation_region_output_function:输出的星型耦合器尺寸.
           fpr_spacing:输入输出星型耦合器的阵列波导在x方向上的间距。
-          arm_spacing:阵列波导y方向上的高度差.
+          arm_spacing:相邻阵列波导之间y方向上的高度差.
           cross_section:横截面类型，其中包含层类型和层号.
       函数Free propagation region:
       Args:
@@ -2024,9 +2024,83 @@ z150_GDS= LayerStack(
         ),
     }
 )
-#生成layer.lyp和tech.lyt文件，用于klayout中层的显示。
-from gdsfactory.technology import LayerViews
+import os
+def export_layer_stack_info(
+        layer_stack_name: str = "Si_zp45_LayerStack",
+        output_dir: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter",
+        percent: float = 0.45,
+        file_prefix: str = "LayerStack"
+) -> None:
+    """
+    导出层栈信息到文本文件
+    参数:
+        layer_stack_name: 层栈变量名 (默认: "Si_zp45_LayerStack")
+        output_dir: 输出目录路径 (默认: CSU_PDK参数目录)
+        percent: 折射率变化百分比 (默认: 0.45)
+        file_prefix: 输出文件名前缀 (默认: "LayerStack")
+    返回:
+        None (结果直接保存到文件)
+    """
+    # 动态获取层栈对象
+    layer_stack = globals().get(layer_stack_name)
+    if layer_stack is None:
+        raise ValueError(f"未找到层栈定义: {layer_stack_name}")
+    # 构建输出文件路径
+    output_filename = f"{file_prefix}_{percent * 100:.0f}percent.txt"
+    output_path = os.path.join(output_dir, output_filename)
+    # 创建输出目录(如果不存在)
+    os.makedirs(output_dir, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        # 写入文件头
+        print(f"将{layer_stack_name}中的主要参数，保存至下方文件内")
+        f.write(f"Design Rules for {percent * 100:.2f}% Delta N index (um)\n")
+        f.write("\t\tParameter\n")
+        # 写入基底(substrate)信息
+        if 'substrate' in layer_stack.layers:
+            for key, value in layer_stack.layers['substrate'].info.items():
+                f.write(f"{key}: {value}\n")
+        # 写入各层信息
+        f.write("\nlayer_stack_parameter\n")
+        for layer_name, layer in layer_stack.layers.items():
+            f.write(f"\nLayerName: {layer_name}:\n")
+            f.write(f"\tThickness: {layer.thickness},\n")
+            f.write(f"\tThickness_tolerance: {layer.thickness_tolerance},\n")
+            f.write(f"\tMaterial: {layer.material},\n")
+            f.write(f"\tZmin: {layer.zmin},\n")
+            f.write(f"\tDerivedLayer: {layer.derived_layer}\n")
+            if layer_name != "substrate" and layer.info:
+                        f.write("\tInfo:\n")
+                        for key, value in layer.info.items():
+                            f.write(f"\t\t{key}: {value}\n")
+        print(f"TXT文件已保存至: {output_path}")
+import datetime
+def save_gds(component,
+             component_name:str=None,
+             output_gds_path=None,
+             ):
+    """保存组件到GDS文件"""
+    if component_name is None:
+        component_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    else:
+        component_name = component_name
+    if output_gds_path is None:
+        output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+    else:
+        output_gds_path = output_gds_path
+    component.write_gds(output_gds_path)
+    print(f"GDS 文件已保存至: {output_gds_path}")
+#测试layer_map
+from csufactory.generic_tech.layer_map import CSULAYER
+def test_layer_map():
+    assert CSULAYER.get_layer("WG") == (200, 0)
+    assert CSULAYER.get_layer("Metal_Al") == (13, 0)
+    assert CSULAYER.get_layer("MOPT") is None  # 不存在的层应返回 None
 if __name__ == "__main__":
+    test_layer_map()
+    print("LayerMap 测试通过！")
+if __name__ == "__main__":
+    # 生成layer.lyp和tech.lyt文件，用于klayout中层的显示。
+    from gdsfactory.technology import LayerViews
     layer_views_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\layer_views.yaml"
     layer_lyp_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\klayout\salt\layer.lyp"
     LAYER_VIEWS = LayerViews(filepath=layer_views_path)
@@ -2036,9 +2110,18 @@ if __name__ == "__main__":
     #生成每层的预览图
     c = LAYER_VIEWS.preview_layerset()
     c.show()
-#运行用户交互函数
+if __name__ == "__main__":
+    #运行用户交互函数
     from csufactory.dialoge import run
     run()
+from csufactory.generic_tech.layer_map import CSULAYER
+def test_layer_map():
+    assert CSULAYER.get_layer("WG") == (200, 0)
+    assert CSULAYER.get_layer("Metal_Al") == (13, 0)
+    assert CSULAYER.get_layer("MOPT") is None  # 不存在的层应返回 None
+if __name__ == "__main__":
+    test_layer_map()
+    print("LayerMap 测试通过！")
 
 
 

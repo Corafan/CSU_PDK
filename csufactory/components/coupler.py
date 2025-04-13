@@ -210,22 +210,22 @@ def coupler(
 #     return c
 #
 #
-# if __name__ == "__main__":
-#     from csufactory.generic_tech.layer_stack import get_layer_stack
-#     c = gf.Component()
-#
-#     coupler_= c << coupler()
-#     component_name = ("coupler")
-#     # n = c.get_netlist()
-#     c.show()
-#
-#     # 无时间戳：
-#     output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
-#     # 有时间戳：
-#     # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-#     # output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}_{timestamp}.gds"
-#     c.write_gds(output_gds_path)
-#     print(f"GDS 文件已保存至: {output_gds_path}")
+if __name__ == "__main__":
+    from csufactory.generic_tech.layer_stack import get_layer_stack
+    c = gf.Component()
+
+    coupler_= c << coupler()
+    component_name = ("coupler")
+    # n = c.get_netlist()
+    c.show()
+
+    # 无时间戳：
+    output_gds_path = fr"C:\Windows\System32\CSU_PDK\examples\{component_name}.gds"
+    # 有时间戳：
+    # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}_{timestamp}.gds"
+    c.write_gds(output_gds_path)
+    print(f"GDS 文件已保存至: {output_gds_path}")
 #
 #     s=c.to_3d(layer_stack=get_layer_stack(thickness_wg=220e-3))
 #     s.show()

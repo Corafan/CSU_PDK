@@ -24,7 +24,7 @@ def awg(
           free_propagation_region_input_function:输入的星型耦合器尺寸.
           free_propagation_region_output_function:输出的星型耦合器尺寸.
           fpr_spacing:输入输出星型耦合器的阵列波导在x方向上的间距。
-          arm_spacing:阵列波导y方向上的高度差.
+          arm_spacing:相邻阵列波导之间y方向上的高度差.
           cross_section:横截面类型，其中包含层类型和层号.
       函数Free propagation region:
       Args:
@@ -288,11 +288,20 @@ def awg(
 #
 #     component_name = "awg"
 #     # 无时间戳：
-#     output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+#     output_gds_path = fr"C:\Windows\System32\CSU_PDK\examples\{component_name}.gds"
 #     # 有时间戳：
 #     # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 #     # output_gds_path = fr"D:\ProgramData\anaconda3\Lib\site-packages\gdsfactory\all_output_files\gds\{component_name}_{timestamp}.gds"
 #     c.write_gds(output_gds_path)
 #     print(f"GDS 文件已保存至: {output_gds_path}")
 #     c.show()
-#
+
+
+from csufactory.components.awg import awg
+from csufactory.technology.save_gds import save_gds
+if __name__ == "__main__":
+    c=awg()
+    c.show()
+    save_gds(c,"awg",fr"C:\Windows\System32\CSU_PDK\examples\awg.gds")
+
+

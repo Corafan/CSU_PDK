@@ -117,7 +117,7 @@ def y_branch(cross_section: str = "strip_sc", **kwargs: Any) -> gf.Component:
 cells = get_cells(sys.modules[__name__])
 cross_sections = get_cross_sections(sys.modules[__name__])
 #将LayerViews改为自己的路径
-LAYER_VIEWS = LayerViews(filepath="C:/Windows/System32/CSU_PDK/csufactory/generic_tech/layer_views.yaml")
+LAYER_VIEWS = LayerViews(filepath="/csufactory/generic_tech/layer_views.yaml")
 
 #若出现报错可以尝试：
 # # 直接在注册 PDK 前定义横截面
