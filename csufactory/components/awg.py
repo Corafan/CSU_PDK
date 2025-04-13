@@ -299,9 +299,9 @@ def awg(
 
 from csufactory.components.awg import awg
 from csufactory.technology.save_gds import save_gds
+from csufactory.components.generate_Para.component_layer_stack import Si_zp75_LayerStack
+from csufactory.technology.export_layer_stack_info import export_layer_stack_info
 if __name__ == "__main__":
-    c=awg()
-    c.show()
-    save_gds(c,"awg",fr"C:\Windows\System32\CSU_PDK\examples\awg.gds")
+    export_layer_stack_info(Si_zp75_LayerStack)
 
 

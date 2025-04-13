@@ -1,4 +1,4 @@
-Design Rules for 45.00% Delta N index (um)
+Design Rules for 75.00% Delta N index (um)
 		Parameter
 wafer_diameter: 150000
 PDL: 0.3

@@ -2025,8 +2025,9 @@ z150_GDS= LayerStack(
     }
 )
 import os
+from gdsfactory.pdk import LayerStack
 def export_layer_stack_info(
-        layer_stack_name: str = "Si_zp45_LayerStack",
+        layer_stack: LayerStack,
         output_dir: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter",
         percent: float = 0.45,
         file_prefix: str = "LayerStack"
@@ -2034,17 +2035,13 @@ def export_layer_stack_info(
     """
     导出层栈信息到文本文件
     参数:
-        layer_stack_name: 层栈变量名 (默认: "Si_zp45_LayerStack")
-        output_dir: 输出目录路径 (默认: CSU_PDK参数目录)
+        layer_stack: LayerStack 对象
+        output_dir: 输出目录路径
         percent: 折射率变化百分比 (默认: 0.45)
         file_prefix: 输出文件名前缀 (默认: "LayerStack")
     返回:
         None (结果直接保存到文件)
     """
-    # 动态获取层栈对象
-    layer_stack = globals().get(layer_stack_name)
-    if layer_stack is None:
-        raise ValueError(f"未找到层栈定义: {layer_stack_name}")
     # 构建输出文件路径
     output_filename = f"{file_prefix}_{percent * 100:.0f}percent.txt"
     output_path = os.path.join(output_dir, output_filename)
@@ -2052,7 +2049,6 @@ def export_layer_stack_info(
     os.makedirs(output_dir, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         # 写入文件头
-        print(f"将{layer_stack_name}中的主要参数，保存至下方文件内")
         f.write(f"Design Rules for {percent * 100:.2f}% Delta N index (um)\n")
         f.write("\t\tParameter\n")
         # 写入基底(substrate)信息
@@ -2069,10 +2065,10 @@ def export_layer_stack_info(
             f.write(f"\tZmin: {layer.zmin},\n")
             f.write(f"\tDerivedLayer: {layer.derived_layer}\n")
             if layer_name != "substrate" and layer.info:
-                        f.write("\tInfo:\n")
-                        for key, value in layer.info.items():
-                            f.write(f"\t\t{key}: {value}\n")
-        print(f"TXT文件已保存至: {output_path}")
+                f.write("\tInfo:\n")
+                for key, value in layer.info.items():
+                    f.write(f"\t\t{key}: {value}\n")
+    print(f"TXT文件已保存至: {output_path}")
 import datetime
 def save_gds(component,
              component_name:str=None,
