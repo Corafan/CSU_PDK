@@ -23,14 +23,14 @@ def awg(
           outputs:输出波导数量.
           free_propagation_region_input_function:输入的星型耦合器尺寸.
           free_propagation_region_output_function:输出的星型耦合器尺寸.
-          fpr_spacing:输入输出星型耦合器的阵列波导在x方向上的间距。
+          fpr_spacing:自由传播区域长度，即阵列波导在x方向上的间距。
           arm_spacing:相邻阵列波导之间y方向上的高度差.
           cross_section:横截面类型，其中包含层类型和层号.
       函数Free propagation region:
       Args:
-          width1: 输入区域的宽度.
-          width2: 输出区域的宽度.
-          length: 自由传播区的长度.
+          width1: 星型耦合器的宽度1，连接输入输出波导。
+          width2: 星型耦合器的宽度2，连接阵列波导。
+          length: 星型耦合器长度.
           wg_width:波导宽度.
       .. code::
                    length

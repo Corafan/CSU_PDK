@@ -64,9 +64,9 @@ def get_function_params(func):
 def select_component():
     """只负责选择组件，不涉及参数输入"""
     components_list = list_components()
-    print(f"CSUPDK包含的组件有：")
+    print(f"PLCPDK包含的组件有：")
     for i, comp in enumerate(components_list, start=1):
-        print(f"{i}. {comp}")  # 打印目前csupdk包含的器件
+        print(f"{i}. {comp}")  # 打印目前PLCPDK包含的器件
 
     while True:  # 循环直到用户确认选择
         # 选择组件
@@ -437,10 +437,10 @@ def save_gds(component):
         component_name = component_name
     # 文件保存地址：
     output_gds_path = input(
-        f"请输入文件地址（若未输入，将默认保存到C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds）: ")
+        f"请输入文件地址（若未输入，将默认保存到C:\Windows\System32\PLCPDK\csufactory\all_output_files\gds\{component_name}.gds）: ")
     if output_gds_path == "":
         # 无时间戳：
-        output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+        output_gds_path = fr"C:\Windows\System32\PLCPDK\csufactory\all_output_files\gds\{component_name}.gds"
         # # 有时间戳：
         # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         # output_gds_path = fr"D:\ProgramData\anaconda3\Lib\site-packages\gdsfactory\all_output_files\gds\{component_name}_{timestamp}.gds"
@@ -677,7 +677,7 @@ def run():
                     material_choice = input("请输入选择(1-3): ").strip()
 
                     # 获取输出目录（所有导出模式共用）
-                    default_dir = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter"
+                    default_dir = r"C:\Windows\System32\PLCPDK\csufactory\all_output_files\parameter"
                     path_choice = input(f"使用默认保存路径({default_dir})? [Y/N]: ").strip().upper()
                     output_dir = default_dir if path_choice != "N" else input("请输入新保存路径: ").strip()
 

@@ -25,7 +25,7 @@ def get_function_params(func):
 def select_component():
     """选择组件，不涉及参数输入"""
     components_list = list_components()
-    print(f"CSUPDK包含的组件有：")
+    print(f"PLCPDK包含的组件有：")
     for i, comp in enumerate(components_list, start=1):
         print(f"{i}. {comp}")
     while True:
@@ -246,9 +246,9 @@ def save_gds(component):
         component_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     else:
         component_name = component_name
-    output_gds_path = input(f"请输入文件地址（若未输入，将默认保存到C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds）: ")
+    output_gds_path = input(f"请输入文件地址（若未输入，将默认保存到C:\Windows\System32\PLCPDK\csufactory\all_output_files\gds\{component_name}.gds）: ")
     if output_gds_path == "":
-        output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+        output_gds_path = fr"C:\Windows\System32\PLCPDK\csufactory\all_output_files\gds\{component_name}.gds"
     else:
         output_gds_path = output_gds_path
     component.write_gds(output_gds_path)
@@ -369,7 +369,8 @@ def run():
     params = {}
     selected_component_name = None
     history = []
-    while True: # 主循环：控制整个程序流程
+    # 主循环：控制整个程序流程
+    while True:
         # 第一步：选择组件(不返回则只进行一次)
         if not selected_component_name:
             selected_component_name = select_component()
@@ -445,7 +446,7 @@ def run():
                     print("2. Quartz")
                     print("3. 全部材料")
                     material_choice = input("请输入选择(1-3): ").strip()
-                    default_dir = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter"
+                    default_dir = r"C:\Windows\System32\PLCPDK\csufactory\all_output_files\parameter"
                     path_choice = input(f"使用默认保存路径({default_dir})? [Y/N]: ").strip().upper()
                     output_dir = default_dir if path_choice != "N" else input("请输入新保存路径: ").strip()
                     # 第二步：根据选择确定要导出的层栈
@@ -609,14 +610,14 @@ def awg(
           outputs:输出波导数量.
           free_propagation_region_input_function:输入的星型耦合器尺寸.
           free_propagation_region_output_function:输出的星型耦合器尺寸.
-          fpr_spacing:输入输出星型耦合器的阵列波导在x方向上的间距。
+          fpr_spacing:自由传播区域长度，即阵列波导在x方向上的间距。
           arm_spacing:相邻阵列波导之间y方向上的高度差.
           cross_section:横截面类型，其中包含层类型和层号.
       函数Free propagation region:
       Args:
-          width1: 输入区域的宽度.
-          width2: 输出区域的宽度.
-          length: 自由传播区的长度.
+          width1: 星型耦合器的宽度1，连接输入输出波导。
+          width2: 星型耦合器的宽度2，连接阵列波导。
+          length: 星型耦合器长度.
           wg_width:波导宽度.
       .. code::
                    length
@@ -754,7 +755,7 @@ from gdsfactory.typings import ComponentSpec,LayerSpec
 def grating(
     width:float =4,
     length:float =20,
-    num_wg: int = 5,  # 波导数量
+    num_wg: int = 5,
     cross_section: ComponentSpec = "strip",
 ) -> Component:
     """生成一个光栅（grating）。
@@ -931,7 +932,7 @@ def ring_coupler(
     c.add_port(f"o4",port=wg_bottom.ports["o2"])
     c.flatten()
     return c
-##生成器件ring_resonator
+#生成器件ring_resonator
 from __future__ import annotations
 import gdsfactory as gf
 from gdsfactory.component import Component
@@ -1029,16 +1030,16 @@ from gdsfactory.typings import CrossSectionSpec
 import numpy as np
 @gf.cell
 def star_coupler(
-    num_ports: int = 10,  # 波导数量
-    body_size: tuple[float, float] = (2.5, 4),  # 椭圆主耦合区域 a和b轴
-    waveguide_length: float = 3,  # 波导的长度
-    waveguide_width: float = 0.5,  # 波导的宽度
+    num_ports: int = 10,
+    body_size: tuple[float, float] = (2.5, 4),
+    waveguide_length: float = 3,
+    waveguide_width: float = 0.5,
     cross_section: CrossSectionSpec = "strip",
 ) -> Component:
     """生成一个星型耦合器（star coupler），采用从中心发散的波导。
     Args:
         num_ports: 波导的数量。必须为偶数!
-        body_size: 中心区域（圆形）的半径。
+        body_size: 椭圆主耦合区域 a和b轴。
         waveguide_length: 波导的长度。
         waveguide_width: 波导的宽度。
         cross_section: 横截面类型，不建议修改。
@@ -1242,7 +1243,7 @@ def Ybranch_1x2(
     width: float = 0.5,
     angle1: float = 30,
     angle2: float = 30,
-    cross_section: CrossSectionSpec = "strip",  # 这里是直接使用字符串来表示交叉截面
+    cross_section: CrossSectionSpec = "strip",
     allow_min_radius_violation: bool = False,
 ) -> Component:
     r"""生成y分支.
@@ -1322,7 +1323,7 @@ class LayerStackParameters:
 import gdsfactory as gf
 Layer = tuple[int, int]
 class CSULAYER(gf.LayerEnum):
-    """ CSUPDK层映射定义 """
+    """ PLCPDK层映射定义 """
     layout = gf.constant(gf.kcl.layout)
     Si_Sub: Layer = (88, 0)
     SiO_Bottom_Clad: Layer = (87, 0)
@@ -1916,7 +1917,6 @@ Si_150_LayerStack= LayerStack(
             zmin=-Para.thickness_bottom_clad,
             material="silicon",
             mesh_order=9,
-            # derived_layer=layer_box,
             info={
                 "refractive_index": 1.444,
             }
@@ -2028,7 +2028,7 @@ import os
 from gdsfactory.pdk import LayerStack
 def export_layer_stack_info(
         layer_stack: LayerStack,
-        output_dir: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter",
+        output_dir: str = r"C:\Windows\System32\PLCPDK\csufactory\all_output_files\parameter",
         percent: float = 0.45,
         file_prefix: str = "LayerStack"
 ) -> None:
@@ -2080,7 +2080,7 @@ def save_gds(component,
     else:
         component_name = component_name
     if output_gds_path is None:
-        output_gds_path = fr"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\gds\{component_name}.gds"
+        output_gds_path = fr"C:\Windows\System32\PLCPDK\csufactory\all_output_files\gds\{component_name}.gds"
     else:
         output_gds_path = output_gds_path
     component.write_gds(output_gds_path)
@@ -2090,15 +2090,15 @@ from csufactory.generic_tech.layer_map import CSULAYER
 def test_layer_map():
     assert CSULAYER.get_layer("WG") == (200, 0)
     assert CSULAYER.get_layer("Metal_Al") == (13, 0)
-    assert CSULAYER.get_layer("MOPT") is None  # 不存在的层应返回 None
+    assert CSULAYER.get_layer("MOPT") is None
 if __name__ == "__main__":
     test_layer_map()
     print("LayerMap 测试通过！")
 if __name__ == "__main__":
     # 生成layer.lyp和tech.lyt文件，用于klayout中层的显示。
     from gdsfactory.technology import LayerViews
-    layer_views_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\layer_views.yaml"
-    layer_lyp_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\klayout\salt\layer.lyp"
+    layer_views_path = "C:\Windows\System32\PLCPDK\csufactory\generic_tech\layer_views.yaml"
+    layer_lyp_path = "C:\Windows\System32\PLCPDK\csufactory\generic_tech\klayout\salt\layer.lyp"
     LAYER_VIEWS = LayerViews(filepath=layer_views_path)
     print(f"已从{layer_views_path}中获取层信息")
     LAYER_VIEWS.to_lyp(filepath=layer_lyp_path)
@@ -2114,7 +2114,7 @@ from csufactory.generic_tech.layer_map import CSULAYER
 def test_layer_map():
     assert CSULAYER.get_layer("WG") == (200, 0)
     assert CSULAYER.get_layer("Metal_Al") == (13, 0)
-    assert CSULAYER.get_layer("MOPT") is None  # 不存在的层应返回 None
+    assert CSULAYER.get_layer("MOPT") is None 
 if __name__ == "__main__":
     test_layer_map()
     print("LayerMap 测试通过！")

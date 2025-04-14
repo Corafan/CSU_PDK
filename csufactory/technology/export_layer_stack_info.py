@@ -54,7 +54,7 @@ import os
 from gdsfactory.pdk import LayerStack
 def export_layer_stack_info(
         layer_stack: LayerStack,
-        output_dir: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter",
+        output_dir: str = r"C:\Windows\System32\CSU_PDK\csufactory\all_output_files\parameter",#这里csu_pdk换成PLCPDK?
         percent: float = 0.45,
         file_prefix: str = "LayerStack"
 ) -> None:

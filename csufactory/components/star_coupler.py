@@ -18,7 +18,7 @@ def star_coupler(
 
     Args:
         num_ports: 波导的数量。必须为偶数!
-        body_size: 中心区域（圆形）的半径。
+        body_size: 椭圆主耦合区域 a和b轴。
         waveguide_length: 波导的长度。
         waveguide_width: 波导的宽度。
         cross_section: 横截面类型，不建议修改。

@@ -3,8 +3,8 @@ from gdsfactory.technology import LayerViews
 if __name__ == "__main__":
 
 
-    layer_views_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\layer_views.yaml"
-    layer_lyp_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\klayout\salt\layer.lyp"
+    layer_views_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\layer_views.yaml"  ##这里csu_pdk换成PLCPDK?
+    layer_lyp_path = "C:\Windows\System32\CSU_PDK\csufactory\generic_tech\klayout\salt\layer.lyp"  ##这里csu_pdk换成PLCPDK?
     #定义LayerViews路径：
     LAYER_VIEWS = LayerViews(filepath=layer_views_path)
     print(f"已从{layer_views_path}中获取层信息")
