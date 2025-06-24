@@ -1,4 +1,4 @@
-gdsfactory==8.20.0
+gdsfactory==9.9.2
 numpy
 
 
